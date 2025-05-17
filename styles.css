@@ -1,0 +1,217 @@
+body {
+  margin: 0;
+  font-family: 'Helvetica Neue', sans-serif;
+  background: #e6f4ff; 
+  color: #333;
+}
+
+.header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background-color: #cce4f6; 
+  border-radius: 0 0 12px 12px;
+}
+
+.sidebar-toggle-btn,
+.toggle-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #2d6ca7;
+}
+
+.home-link {
+  text-decoration: none;
+  color: #1a3e75;
+  font-weight: bold;
+  font-size: 20px;
+}
+
+.auth-buttons button {
+  margin-left: 10px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #2a5d9f;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.auth-buttons button:hover {
+  background: #d4eaff;
+}
+
+.container {
+  display: flex;
+  height: calc(100vh - 80px);
+}
+
+.sidebar {
+  width: 250px;
+  background-color: #f0f8ff;
+  padding: 20px;
+  box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+  border-top-right-radius: 20px;
+  border-bottom-right-radius: 20px;
+  transition: transform 0.3s;
+}
+
+.sidebar.hidden {
+  transform: translateX(-100%);
+}
+
+.sidebar h2 {
+  font-size: 18px;
+  color: #2a4d77;
+  margin-bottom: 10px;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar li {
+  margin-bottom: 10px;
+}
+
+.sidebar a {
+  text-decoration: none;
+  color: #2d6ca7;
+  font-weight: 500;
+}
+
+.main-content-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.main-content {
+  display: flex;
+  gap: 20px;
+  height: 100%;
+}
+
+.calendar-container {
+  flex: 1;
+  max-width: 30%;
+  background: #ffffff;
+  border-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  text-align: center;
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.calendar {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.calendar td {
+  padding: 8px;
+  text-align: center;
+}
+
+.calendar td button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 5px;
+  border-radius: 10px;
+  transition: background 0.2s;
+}
+
+.calendar td button:hover {
+  background: #d4ecff;
+}
+
+.diary-container {
+  flex: 2;
+  background: #ffffff;
+  border-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  overflow-y: auto;
+}
+
+.diary-container img {
+  margin-top: 10px;
+  max-width: 100%;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+/* 다이어리 작성 폼 스타일 */
+.diary-container input[type="text"],
+.diary-container textarea {
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  font-size: 16px;
+  font-family: inherit;
+  box-sizing: border-box;
+  background: #f9fcff;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.diary-container input[type="text"]:focus,
+.diary-container textarea:focus {
+  border-color: #2d6ca7;
+  box-shadow: 0 0 5px rgba(45, 108, 167, 0.3);
+  outline: none;
+}
+
+.diary-container input[type="file"] {
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: #555;
+}
+
+.diary-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.diary-buttons button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background-color: #2d6ca7;
+  color: #fff;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.diary-buttons button:hover {
+  background-color: #1a4b7c;
+}
+
+.footer-player {
+  margin-top: 20px;
+  background: #ffffff;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}

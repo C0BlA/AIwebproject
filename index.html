@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>감정 다이어리</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <div class="header-bar">
+    <button class="sidebar-toggle-btn" onclick="toggleSidebar()">☰ 메뉴</button>
+    <a href="/" class="home-link">감정다이어리</a>
+    <div class="auth-buttons">
+      <button>로그인</button>
+      <button>회원가입</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- 사이드바 -->
+    <div class="sidebar" id="sidebar">
+      <button class="toggle-btn" onclick="toggleSidebar()">← 닫기</button>
+
+      <h2>1주일 감정 분석</h2>
+      <div class="emotion-graph">
+        <p>[기분 그래프 들어갈 자리]</p>
+      </div>
+
+      <h2>최근 다이어리</h2>
+      <ul>
+        <li><a href="#">2025-05-12 - 예시</a></li>
+        <li><a href="#">2025-05-11 - 예시</a></li>
+      </ul>
+    </div>
+
+    <!-- 메인 컨텐츠 -->
+    <div class="main-content-wrapper">
+      <div class="main-content">
+        <!-- 달력 -->
+        <div class="calendar-container">
+          <div class="calendar-header">
+            <button onclick="prevMonth()">←</button>
+            <h3 id="month-year">2025년 5월</h3>
+            <button onclick="nextMonth()">→</button>
+          </div>
+          <table class="calendar" id="calendar"></table>
+        </div>
+
+        <!-- 다이어리 영역 -->
+        <div class="diary-container" id="diary-container">
+          <p>날짜를 선택해주세요.</p>
+        </div>
+      </div>
+
+      <!-- 하단 음악 플레이어 -->
+      <div class="footer-player">
+        <iframe width="100%" height="100" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/366653432&color=%2344545c&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true"></iframe>
+        <div style="font-size: 10px; color: #cccccc; word-break: break-word; font-family: sans-serif;">
+          <a href="https://soundcloud.com/nawhij" target="_blank">nawhij</a> · 
+          <a href="https://soundcloud.com/nawhij/so-glad" target="_blank">So Glad</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentMonth = new Date().getMonth();
+    let currentYear = new Date().getFullYear();
+
+    const emojiByFeeling = ['☀️', '🌤', '⛅', '🌧', '⛈', '🌪'];
+    const dummyDB = {
+      "2025-05-12": {
+        title: "즐거운 하루",
+        text: "오늘은 너무 즐거웠다!",
+        image: "https://via.placeholder.com/300x200.png?text=Diary+Image"
+      },
+    };
+
+    function generateCalendar(month, year) {
+      const calendar = document.getElementById('calendar');
+      const monthYear = document.getElementById('month-year');
+      const firstDay = new Date(year, month).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      calendar.innerHTML = '';
+      monthYear.textContent = `${year}년 ${month + 1}월`;
+
+      let date = 1;
+      for (let i = 0; i < 6; i++) {
+        const row = document.createElement('tr');
+
+        for (let j = 0; j < 7; j++) {
+          const cell = document.createElement('td');
+          if (i === 0 && j < firstDay) {
+            cell.innerHTML = '';
+          } else if (date > daysInMonth) {
+            break;
+          } else {
+            const emoji = emojiByFeeling[1];
+            cell.innerHTML = `<button onclick="showDiary('${year}-${(month + 1).toString().padStart(2, '0')}-${date.toString().padStart(2, '0')}')">${emoji}<br>${date}</button>`;
+            date++;
+          }
+          row.appendChild(cell);
+        }
+
+        calendar.appendChild(row);
+      }
+    }
+
+    function showDiary(dateStr) {
+      const container = document.getElementById('diary-container');
+      const diaryData = dummyDB[dateStr];
+
+      if (diaryData) {
+        container.innerHTML = `
+          <h2>${diaryData.title}</h2>
+          <p>${diaryData.text}</p>
+          ${diaryData.image ? `<img src="${diaryData.image}" alt="다이어리 이미지" />` : ''}
+          <div class="diary-buttons">
+            <button onclick="editDiary('${dateStr}')">수정</button>
+            <button onclick="deleteDiary('${dateStr}')">삭제</button>
+          </div>
+        `;
+      } else {
+        container.innerHTML = `
+          <input type="text" id="diary-title-input" placeholder="제목을 입력하세요" />
+          <textarea id="diary-text-input" rows="5" placeholder="내용을 입력하세요"></textarea>
+          <input type="file" id="diary-image-input" accept="image/*" />
+          <div class="diary-buttons">
+            <button onclick="saveDiary('${dateStr}')">저장</button>
+            <button onclick="cancelDiary()">취소</button>
+          </div>
+        `;
+      }
+    }
+
+    function saveDiary(dateStr) {
+      const title = document.getElementById('diary-title-input').value;
+      const text = document.getElementById('diary-text-input').value;
+      const imageFile = document.getElementById('diary-image-input').files[0];
+      const imageUrl = imageFile ? URL.createObjectURL(imageFile) : '';
+
+      dummyDB[dateStr] = { title, text, image: imageUrl };
+      showDiary(dateStr);
+    }
+
+    function cancelDiary() {
+      document.getElementById('diary-container').innerHTML = `<p>날짜를 선택해주세요.</p>`;
+    }
+
+    function editDiary(dateStr) {
+      const data = dummyDB[dateStr];
+      const container = document.getElementById('diary-container');
+      container.innerHTML = `
+        <input type="text" id="diary-title-input" value="${data.title}" />
+        <textarea id="diary-text-input" rows="5">${data.text}</textarea>
+        <input type="file" id="diary-image-input" accept="image/*" />
+        <div class="diary-buttons">
+          <button onclick="saveDiary('${dateStr}')">저장</button>
+          <button onclick="cancelDiary()">취소</button>
+        </div>
+      `;
+    }
+
+    function deleteDiary(dateStr) {
+      if (confirm("정말 삭제하시겠습니까?")) {
+        delete dummyDB[dateStr];
+        cancelDiary();
+      }
+    }
+
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('hidden');
+    }
+
+    generateCalendar(currentMonth, currentYear);
+  </script>
+</body>
+</html>
