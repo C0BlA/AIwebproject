@@ -6,7 +6,7 @@
 
 const emojiByFeeling = ['☀️', '🌤', '⛅', '🌧', '⛈', '🌪'];
 
-const dummyDB = {
+const DB_DATA_EXAMPLE = {
     "2025-05-12": {
     title: "즐거운 하루",
     text: "오늘은 너무 즐거웠다!",
