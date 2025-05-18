@@ -15,7 +15,7 @@ const DB_DATA_EXAMPLE = {
 
 
 [로그인&회원가입 기능]
-- Node.js + MongoDB 사용
+Node.js + MongoDB 사용
 <순서대로 진행>
 - MongoDB compass설치
 - Node.js
