@@ -6,16 +6,44 @@
   <title>감정 다이어리</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
+
+
 <body>
+
 
   <div class="header-bar">
     <button class="sidebar-toggle-btn" onclick="toggleSidebar()">☰ 메뉴</button>
     <a href="/" class="home-link">감정다이어리</a>
     <div class="auth-buttons">
-      <button>로그인</button>
-      <button>회원가입</button>
+      <button onclick="openLogin()">로그인</button>
+      <button onclick="openRegister()">회원가입</button>
     </div>
   </div>
+
+
+  <!-- 로그인-->
+  <div id="login-modal" class="modal">
+    <form onsubmit="login(); return false;" >
+      <h3>로그인</h3>
+      <input type="text" id="login-id" placeholder="아이디" required /><br/><br/>
+      <input type="password" id="login-pw" placeholder="비밀번호" required /><br/><br/>
+      <button type="submit">로그인</button>
+      <button type="button" onclick="closeLogin()">닫기</button>
+    </form>
+  </div>
+
+
+  <!-- 회원가입-->
+  <div id="register-modal" class="modal">
+    <form onsubmit="register(); return false;" >
+      <h3>회원가입</h3>
+      <input type="text" id="register-id" placeholder="아이디" required /><br/><br/>
+      <input type="password" id="register-pw" placeholder="비밀번호" required /><br/><br/>
+      <button type="submit">가입하기</button>
+      <button type="button" onclick="closeRegister()">닫기</button>
+    </form>
+  </div>
+
 
   <div class="container">
     <!-- 사이드바 -->
@@ -176,5 +204,8 @@
 
     generateCalendar(currentMonth, currentYear);
   </script>
+
+  <script src="login.js"></script>
+
 </body>
 </html>
