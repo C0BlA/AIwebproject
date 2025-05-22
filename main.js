@@ -299,3 +299,28 @@ async function deleteDiary(dateStr) {
   }
 }
 
+// 오늘-기준 1주일 데이터 저장용 (날짜 → {temp, humid, emoji})
+const moodWeek = {};
+// 1주일 기준으로 분석
+const DAYS_IN_WEEK = 7;
+
+function plotMoodPoint(dateKey, temp, humid, emoji) {
+  const canvas = document.getElementById("moodCanvas");
+  const ctx = canvas.getContext("2d");
+
+  // 온도 0~40, 습도 0~100을 캔버스 좌표로 변환
+  const x = 40 + (temp / 40) * (canvas.width - 60);
+  const y = canvas.height - 40 - (humid / 100) * (canvas.height - 60);
+
+  // 이모지를 텍스트로 찍기
+  ctx.font = "24px sans-serif";
+  ctx.fillText(emoji, x - 12, y + 8);
+
+  // 데이터 저장/갱신
+  moodWeek[dateKey] = { temp, humid, emoji };
+
+  // 1주일(7개) 채워졌으면 분석 실행
+  if (Object.keys(moodWeek).length === DAYS_IN_WEEK) {
+    analyzeWeek();
+  }
+}

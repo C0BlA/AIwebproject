@@ -53,9 +53,8 @@
     <div class="sidebar" id="sidebar">
       <button class="toggle-btn" onclick="toggleSidebar()">← 닫기</button>
       <h2>1주일 감정 분석</h2>
-      <div class="emotion-graph">
-        <p>[기분 그래프 들어갈 자리]</p>
-      </div>
+      <canvas id="moodCanvas" width="400" height="400" style="border:1px solid #ccc; max-width:100%;">
+      </canvas>
       <h2>최근 다이어리</h2>
       <ul>
         <li><a href="#">2025-05-12 - 예시</a></li>
@@ -133,6 +132,45 @@
     }
 
 
+    function initMoodCanvas() {
+      const canvas = document.getElementById("moodCanvas");
+      const ctx = canvas.getContext("2d");
+
+      // ① 배경 지우기
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // ② 축: 온도(X: 0~40℃) / 습도(Y: 0~100%)
+      ctx.strokeStyle = "#888";
+      ctx.lineWidth = 1;
+
+      // X축 (아래쪽)
+      ctx.beginPath();
+      ctx.moveTo(40, canvas.height - 40);
+      ctx.lineTo(canvas.width - 10, canvas.height - 40);
+      ctx.stroke();
+      // Y축 (왼쪽)
+      ctx.beginPath();
+      ctx.moveTo(40, canvas.height - 40);
+      ctx.lineTo(40, 10);
+      ctx.stroke();
+
+      // 축 라벨
+      ctx.font = "12px sans-serif";
+      ctx.fillText("온도(℃)", canvas.width / 2 - 20, canvas.height - 10);
+      ctx.fillText("습도(%)", 5, 20);
+
+      // 눈금선(간단히 4등분 예시)
+      const xStep = (canvas.width - 60) / 4;   // 0,10,20,30,40
+      const yStep = (canvas.height - 60) / 4;  // 0,25,50,75,100
+      for (let i = 0; i <= 4; i++) {
+        // X축 눈금
+        ctx.fillText(i * 10, 40 + i * xStep - 5, canvas.height - 25);
+        // Y축 눈금
+        ctx.fillText(i * 25, 10, canvas.height - 40 - i * yStep + 4);
+      }
+    }
+
+
     function toggleSidebar() {
       document.getElementById('sidebar').classList.toggle('hidden');
     }
@@ -141,7 +179,9 @@
     window.onload = function() {
       generateCalendar(currentMonth, currentYear);
       updateAuthUI(); 
+      initMoodCanvas();
     };
+    
   </script>
 
   <script src="main.js"></script>
