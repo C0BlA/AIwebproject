@@ -107,6 +107,7 @@ async function saveDiary(dateStr) {
 
   const formData = new FormData();
   formData.append('date', dateStr);
+  formData.append('emoji', currentEmoji);
   formData.append('title', title);
   formData.append('text', text);
   if (imageFile) {
