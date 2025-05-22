@@ -57,12 +57,13 @@ app.post('/api/diaries',upload.single('image'), async (req, res) => {
 
   try {
     const decoded = jwt.verify(token, SECRET);
-    const { date, title, text } = req.body;
+    const { date, emoji, title, text } = req.body;
     const imageData = req.file ? req.file.buffer.toString('base64') : null;
 
     const newDiary = new Diary({
       userId: decoded.id,  
       date,
+      emoji,
       title,
       text,
       imageData
@@ -97,16 +98,19 @@ app.get('/api/diaries/:date', async (req, res) => {
 });
 
 //다이어리 수정
-app.put('/api/diaries/:date', async (req, res) => {
+app.put('/api/diaries/:date', upload.single('image'), async (req, res) => {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) return res.status(401).json({ error: '토큰 없음' });
 
   try {
     const decoded = jwt.verify(token, SECRET);
-    const { title, text, imageUrl } = req.body;
+    const { emoji, title, text } = req.body;
+    // 새 이미지가 올라왔으면 Base64 로 저장
+    const imageData = req.file ? req.file.buffer.toString('base64') : undefined;
+
     const updated = await Diary.findOneAndUpdate(
       { userId: decoded.id, date: req.params.date },
-      { title, text, imageUrl },
+      { emoji, title, text, ...(imageData && { imageData }) },
       { new: true }
     );
     if (!updated) return res.status(404).json({ error: '다이어리 없음' });
