@@ -56,9 +56,7 @@
       <canvas id="moodCanvas" width="400" height="400" style="border:1px solid #ccc; max-width:100%;">
       </canvas>
       <h2>최근 다이어리</h2>
-      <ul>
-        <li><a href="#">2025-05-12 - 예시</a></li>
-        <li><a href="#">2025-05-11 - 예시</a></li>
+      <ul id="recent-diary-list">
       </ul>
     </div>
 
@@ -74,6 +72,8 @@
         </div>
 
         <div class="diary-container" id="diary-container">
+          
+          
           <p>날짜를 선택해주세요.</p>
         </div>
       </div>
@@ -94,16 +94,14 @@
     let currentYear = new Date().getFullYear();
 
     const emojiByFeeling = ['☀️', '🌤', '⛅', '🌧', '⛈', '🌪'];
-    const dummyDB = {
-      "2025-05-12": {
-        title: "즐거운 하루",
-        text: "오늘은 너무 즐거웠다!",
-        image: "https://via.placeholder.com/300x200.png?text=Diary+Image"
-      },
-    };
+    const token = localStorage.getItem("token"); // 로그인 후 저장된 토큰
 
+   
+
+
+    
     function generateCalendar(month, year) {
-      const calendar = document.getElementById('calendar');
+      const calendar = document.getElementById('calendar');   
       const monthYear = document.getElementById('month-year');
       const firstDay = new Date(year, month).getDay();
       const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -130,6 +128,65 @@
         calendar.appendChild(row);
       }
     }
+    function prevMonth() {
+      currentMonth--;
+      if (currentMonth < 0) {
+        currentMonth = 11;
+        currentYear--;
+      }
+      generateCalendar(currentMonth, currentYear);
+    }
+
+    function nextMonth() {
+      currentMonth++;
+      if (currentMonth > 11) {
+        currentMonth = 0;
+        currentYear++;
+      }
+      generateCalendar(currentMonth, currentYear);
+    }
+    function getSelectedWeather() {
+      const radios = document.getElementsByName('weather');
+      for (const radio of radios) {
+        if (radio.checked) {
+          return radio.value;
+        }
+      }
+      return null;
+    }
+
+    function showDiary(dateString) {
+  // 이전 선택된 날짜 버튼에서 강조 제거
+  const prevSelected = document.querySelector('.calendar td button.selected-date');
+  if (prevSelected) {
+    prevSelected.classList.remove('selected-date');
+  }
+
+  // 새로 선택한 날짜 버튼에 강조 적용
+  const buttons = document.querySelectorAll('.calendar td button');
+  buttons.forEach(btn => {
+    if (btn.innerText.includes(parseInt(dateString.split('-')[2], 10))) {
+      btn.classList.add('selected-date');
+    }
+  });
+
+  // 다이어리 영역 업데이트
+  const container = document.getElementById("diary-container");
+  const entry = dummyDB[dateString];
+  if (entry) {
+    container.innerHTML = `
+      <h3>${dateString}</h3>
+      <h4>${entry.title}</h4>
+      <p>${entry.text}</p>
+      <img src="${entry.image}" alt="다이어리 이미지" style="max-width:100%; height:auto;" />
+    `;
+  } else {
+    container.innerHTML = `
+      <h3>${dateString}</h3>
+      <p>이 날의 다이어리가 없습니다.</p>
+    `;
+  }
+}
 
 
     function initMoodCanvas() {
@@ -177,10 +234,14 @@
 
     // 캘린더 초기화 및 로그인 UI 초기화
     window.onload = function() {
-      generateCalendar(currentMonth, currentYear);
+      generateCalendar(currentMonth, currentYear);  
       updateAuthUI(); 
       initMoodCanvas();
+
+      
     };
+
+    
     
   </script>
 

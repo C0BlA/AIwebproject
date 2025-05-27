@@ -57,12 +57,13 @@ app.post('/api/diaries',upload.single('image'), async (req, res) => {
 
   try {
     const decoded = jwt.verify(token, SECRET);
-    const { date, title, text } = req.body;
+    const { date, title, text, weather } = req.body;
     const imageData = req.file ? req.file.buffer.toString('base64') : null;
 
     const newDiary = new Diary({
       userId: decoded.id,  
       date,
+      weather,
       title,
       text,
       imageData
@@ -140,4 +141,21 @@ app.listen(3000, () => console.log('서버 실행 중: http://localhost:3000'));
 
 
 
+// 최근 다이어리 5개 불러오기
+app.get('/api/diaries', async (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) return res.status(401).json({ error: '토큰 없음' });
 
+  try {
+    const decoded = jwt.verify(token, SECRET);
+    const userId = decoded.id;
+
+    const diaries = await Diary.find({ userId })
+      .sort({ updatedAt: -1 }) 
+      .limit(7); 
+
+    res.json(diaries);
+  } catch (err) {
+    res.status(403).json({ error: '토큰이 유효하지 않음' });
+  }
+});

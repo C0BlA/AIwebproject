@@ -5,8 +5,8 @@ const diarySchema = new mongoose.Schema({
   date: { type: String, required: true },  // YYYY-MM-DD
   title: String,
   text: String,
+  weather: String,
   imageData: String
-});
+}, { timestamps: true });
 
 module.exports = mongoose.model('Diary', diarySchema);
-
