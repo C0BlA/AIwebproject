@@ -26,11 +26,19 @@
       updateAuthUI(); // UI 상태 업데이트
       updateRecentDiaries(); // 로그인하자마자 최근 다이어리 불러오기
       closeLogin(); // 모달 닫기
-      window.location.reload();
-    } else {
-      alert(data.error || '로그인 실패');
-    }
-  }
+      
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = today.getMonth();
+      const dateStr = today.toISOString().slice(0, 10);
+
+      // 캘린더 다시 그린 뒤 오늘 날짜 자동 선택
+      await generateCalendar(month, year);
+      showDiary(dateStr);
+      } else {
+          alert(data.error || '로그인 실패');
+        }
+      }
 
 
   //회원가입
@@ -86,6 +94,7 @@
       authButtons.style.display = 'none';
       userInfo.style.display = 'inline-block';
       welcomeMsg.textContent = `환영합니다, ${username}`;
+      updateRecentDiaries(); 
 
       // 로그인된 경우에만 다이어리 불러오기
       fetch('http://localhost:3000/api/diaries', {
@@ -124,9 +133,21 @@
   }
 
   // 초기 실행 시 로그인 상태 반영
-  window.addEventListener('load', () => {
-    updateAuthUI();
-  });
+  window.addEventListener('load', async () => {
+  updateAuthUI();
+
+  const token = localStorage.getItem('token');
+  if (token) {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth();
+    const dateStr = today.toISOString().slice(0, 10);
+
+    await generateCalendar(month, year);
+    showDiary(dateStr);
+  }
+});
+
 
 
   //다이어리 저장
@@ -160,19 +181,19 @@
 
     const data = await res.json();
     if (res.ok) {
-  alert("다이어리가 저장되었습니다!");
-  showDiary(dateStr);
-  updateRecentDiaries();
+      alert("다이어리가 저장되었습니다!");
+      showDiary(dateStr);
+      updateRecentDiaries();
 
-  // 캘린더에 날씨 바로 반영!
-  const cell = document.querySelector(`[data-date="${dateStr}"]`);
-  if (cell) {
-    cell.innerHTML = `
-      <span style="font-size:20px;">${weather}</span><br>
-      ${parseInt(dateStr.split('-')[2], 10)}
-    `;
-  }
-}
+      // 캘린더에 날씨 바로 반영!
+      const cell = document.querySelector(`[data-date="${dateStr}"]`);
+      if (cell) {
+        cell.innerHTML = `
+          <span style="font-size:20px;">${weather}</span><br>
+          ${parseInt(dateStr.split('-')[2], 10)}
+        `;
+      }
+    }
 
   }
 
@@ -261,8 +282,29 @@
       headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
     })
       .then(res => res.json())
-      .then(data => { 
+      .then(data => {
+        const weatherOptions = [
+          { emoji: "☀️", label: "맑음" },
+          { emoji: "☁️", label: "흐림" },
+          { emoji: "☔", label: "비" },
+          { emoji: "🌩️", label: "번개" },
+          { emoji: "❄️", label: "눈" }
+        ];
+
+        const weatherHTML = `
+          <div id="weather-selection">
+            ${weatherOptions.map(opt => `
+              <label>
+                <input type="radio" name="weather" value="${opt.emoji}" ${data.weather === opt.emoji ? "checked" : ""} />
+                ${opt.emoji} ${opt.label}
+              </label>
+            `).join('')}
+          </div>
+        `;
+
         container.innerHTML = `
+          <h3>${dateStr}</h3>
+          ${weatherHTML}
           <input type="text" id="diary-title-input" value="${data.title}" />
           <textarea id="diary-text-input" rows="5">${data.text}</textarea>
           ${data.imageData 
@@ -306,9 +348,17 @@
     const data = await res.json();
     if (res.ok) {
       alert("다이어리 수정 완료!");
+      diaryDataByDate[dateStr] = data.diary;
       showDiary(dateStr);
-    } else {
+      const cell = document.querySelector(`[data-date="${dateStr}"]`);
+      if (cell) {
+        cell.innerHTML = `
+          <span style="font-size:20px;">${weather}</span><br>
+          ${parseInt(dateStr.split('-')[2], 10)}
+        `;
+      } else {
       alert(data.error || "수정 실패");
+      }
     }
   }
 
@@ -330,6 +380,8 @@
 
             if (res.ok) {
               container.innerHTML = `
+                 <h4>${dateStr}</h4>
+                <h2>오늘의 기분: ${data.weather}</h2>
                 <h2>${data.title}</h2>
                 <p>${data.text}</p>
                 ${data.imageData ? `<img src="data:image/png;base64,${data.imageData}" alt="이미지" style="max-width: 300px;" />` : ''}
@@ -339,7 +391,16 @@
                 </div>
               `;
             } else {
+              //작성된 다이어리 없는 경우
               container.innerHTML = `
+              <div id="weather-selection">
+                <h4>${dateStr}</h4>
+                <label><input type="radio" name="weather" value="☀️" /> ☀️맑음</label>
+                <label><input type="radio" name="weather" value="☁️" /> ☁️흐림</label>
+                <label><input type="radio" name="weather" value="☔" /> ☔비</label>
+                <label><input type="radio" name="weather" value="🌩️" /> 🌩️번개</label>
+                <label><input type="radio" name="weather" value="❄️" /> ❄️눈</label>
+              </div>
                 <input type="text" id="diary-title-input" placeholder="제목을 입력하세요" />
                 <textarea id="diary-text-input" rows="5" placeholder="내용을 입력하세요"></textarea>
                 <input type="file" id="diary-image-input" accept="image/*" />
@@ -371,51 +432,61 @@
     const data = await res.json();
     if (res.ok) {
       alert("삭제 완료");
-      cancelDiary(); 
+      // cancelDiary();
+      showDiary(dateStr);
+      updateRecentDiaries(); 
+      const cell = document.querySelector(`[data-date="${dateStr}"]`);
+      if (cell) {
+        cell.innerHTML = `
+          <br>${parseInt(dateStr.split('-')[2], 10)}
+        `;
+      }
+      delete diaryDataByDate[dateStr];
     } else {
       alert(data.error || "삭제 실패");
     }
   }
 
+  //최근 다이어리
   async function updateRecentDiaries() {
-  const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token');
 
-  try {
-    const res = await fetch('http://localhost:3000/api/diaries/recent', {
-      headers: {
-        'Authorization': 'Bearer ' + token
-      }
-    });
-
-    if (!res.ok) {
-      throw new Error(` 최근 다이어리 불러오기 실패 (${res.status})`);
-    }
-
-    const diaries = await res.json();
-
-    const recentList = document.getElementById('recent-diary-list');
-    recentList.innerHTML = '';
-
-    diaries.forEach(diary => {
-      const li = document.createElement('li');
-
-      const link = document.createElement('a');
-      link.href = '#';
-      link.textContent = `${diary.date}: ${diary.title} (${diary.weather || '날씨 없음'})`;
-
-      link.addEventListener('click', (e) => {
-        e.preventDefault();
-        showDiary(diary.date);
+    try {
+      const res = await fetch('http://localhost:3000/api/diaries/recent', {
+        headers: {
+          'Authorization': 'Bearer ' + token
+        }
       });
 
-      li.appendChild(link);
-      recentList.appendChild(li);
-    });
+      if (!res.ok) {
+        throw new Error(` 최근 다이어리 불러오기 실패 (${res.status})`);
+      }
 
-  } catch (err) {
-    console.error('updateRecentDiaries 오류:', err);
-  }
-}
+      const diaries = await res.json();
+
+      const recentList = document.getElementById('recent-diary-list');
+      recentList.innerHTML = '';
+
+      diaries.slice(0, 5).forEach(diary => { //5개까지만
+        const li = document.createElement('li');
+
+        const link = document.createElement('a');
+        link.href = '#';
+        link.textContent = `${diary.date}: ${diary.title} (${diary.weather || '날씨 없음'})`;
+
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          showDiary(diary.date);
+        });
+
+        li.appendChild(link);
+        recentList.appendChild(li);
+      });
+
+      } catch (err) {
+        console.error('updateRecentDiaries 오류:', err);
+      }
+    }
 
 
   // 오늘-기준 1주일 데이터 저장용 (날짜 → {temp, humid, emoji})

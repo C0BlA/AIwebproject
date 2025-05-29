@@ -77,7 +77,7 @@ app.post('/api/diaries',upload.single('image'), async (req, res) => {
     await newDiary.save();
     res.json({ message: '다이어리 저장 완료' });
   } catch (err) {
-    console.error("❌ 토큰 검증 실패:", err.message); 
+    console.error("토큰 검증 실패:", err.message); 
     res.status(403).json({ error: '토큰이 유효하지 않음' });
 
   }
@@ -141,26 +141,34 @@ app.get('/api/diaries/:date', async (req, res) => {
   }
 });
 
-//다이어리 수정
-app.put('/api/diaries/:date', async (req, res) => {
-  const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return res.status(401).json({ error: '토큰 없음' });
+  //다이어리 수정
+  app.put('/api/diaries/:date', upload.single('image'), async (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: '토큰 없음' });
 
-  try {
-    const decoded = jwt.verify(token, SECRET);
-    const { title, text, imageUrl } = req.body;
-    const updated = await Diary.findOneAndUpdate(
-      { userId: decoded.id, date: req.params.date },
-      { title, text, imageUrl },
-      { new: true }
-    );
-    if (!updated) return res.status(404).json({ error: '다이어리 없음' });
+    try {
+      const decoded = jwt.verify(token, SECRET);
+      const { title, text, weather } = req.body;
+      const imageData = req.file ? req.file.buffer.toString('base64') : undefined;
 
-    res.json({ message: '수정 완료', diary: updated });
-  } catch (err) {
-    res.status(403).json({ error: '토큰 유효하지 않음' });
-  }
-});
+      const updateFields = { title, text, weather };
+      if (imageData) updateFields.imageData = imageData;
+
+      const updated = await Diary.findOneAndUpdate(
+        { userId: decoded.id, date: req.params.date },
+        updateFields,
+        { new: true }
+      );
+
+      if (!updated) return res.status(404).json({ error: '다이어리 없음' });
+
+      res.json({ message: '수정 완료', diary: updated });
+    } catch (err) {
+      console.error("❌ 수정 실패:", err.message);
+      res.status(403).json({ error: '토큰 유효하지 않음' });
+    }
+  });
+
 
 //다이어리 삭제
 app.delete('/api/diaries/:date', async (req, res) => {

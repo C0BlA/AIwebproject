@@ -53,7 +53,8 @@
     <div class="sidebar" id="sidebar">
       <button class="toggle-btn" onclick="toggleSidebar()">← 닫기</button>
       <h2>1주일 감정 분석</h2>
-      <canvas id="moodCanvas" width="400" height="400" style="border:1px solid #ccc; max-width:100%;">
+      <!-- <canvas id="moodCanvas" width="400" height="400" style="border:1px solid #ccc; max-width:100%;"> -->
+      <p>외로움을 느끼고 있습니다.<br>친구들과 만나보시는건 어떠신가요?</p>
       </canvas>
       <h2>최근 다이어리</h2>
       <ul id="recent-diary-list">
@@ -103,6 +104,7 @@
     console.log("diaryDataByDate", diaryDataByDate);
     console.log("예상되는 키 예시:", "2025-05-29", diaryDataByDate["2025-05-29"]);
 
+    
     async function generateCalendar(month, year) {
       await fetchMonthlyDiaries(year, month);  // 먼저 다이어리 불러오기
 
@@ -111,8 +113,24 @@
       const firstDay = new Date(year, month).getDay();
       const daysInMonth = new Date(year, month + 1, 0).getDate();
 
+
+
       calendar.innerHTML = '';
       monthYear.textContent = `${year}년 ${month + 1}월`;
+
+      const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+      const thead = document.createElement('thead');
+      const headRow = document.createElement('tr');
+
+      weekdays.forEach(day => {
+        const th = document.createElement('th');
+        th.textContent = day;
+        headRow.appendChild(th);
+      });
+
+      thead.appendChild(headRow);
+      calendar.appendChild(thead);
+
 
       let date = 1;
       
@@ -126,15 +144,16 @@
             break;
           } else {
             const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${date.toString().padStart(2, '0')}`;
-            const weather = diaryDataByDate[dateStr]?.weather || ' '; // 기본값
+            const weather = diaryDataByDate[dateStr]?.weather || ' ';  // 기본값
      
             cell.classList.add('calendar-date');
             cell.setAttribute('data-date', dateStr);
             cell.onclick = () => showDiary(dateStr);
             cell.innerHTML = `
-              ${diaryDataByDate[dateStr]?.weather ? `<span style="font-size: 20px;">${diaryDataByDate[dateStr].weather}</span><br>` : ''}
+              <span style="font-size:20px; display:inline-block; height:24px;">${diaryDataByDate[dateStr]?.weather || ''}</span><br>
               ${date}
             `;
+
 
 
 
@@ -269,7 +288,7 @@
       const todayStr = `${yyyy}-${mm}-${dd}`;
 
       // 오늘을 기준으로 캘린더 생성
-      generateCalendar(currentMonth, currentYear);  
+      generateCalendar(today.getMonth(), today.getFullYear());
       updateAuthUI(); 
       initMoodCanvas();
 
