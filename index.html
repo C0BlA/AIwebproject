@@ -92,15 +92,20 @@
   <script>
     let currentMonth = new Date().getMonth();
     let currentYear = new Date().getFullYear();
+    
 
     const emojiByFeeling = ['☀️', '🌤', '⛅', '🌧', '⛈', '🌪'];
+    let diaryDataByDate = {}; 
     const token = localStorage.getItem("token"); // 로그인 후 저장된 토큰
 
    
 
+    console.log("diaryDataByDate", diaryDataByDate);
+    console.log("예상되는 키 예시:", "2025-05-29", diaryDataByDate["2025-05-29"]);
 
-    
-    function generateCalendar(month, year) {
+    async function generateCalendar(month, year) {
+      await fetchMonthlyDiaries(year, month);  // 먼저 다이어리 불러오기
+
       const calendar = document.getElementById('calendar');   
       const monthYear = document.getElementById('month-year');
       const firstDay = new Date(year, month).getDay();
@@ -110,6 +115,7 @@
       monthYear.textContent = `${year}년 ${month + 1}월`;
 
       let date = 1;
+      
       for (let i = 0; i < 6; i++) {
         const row = document.createElement('tr');
         for (let j = 0; j < 7; j++) {
@@ -119,8 +125,22 @@
           } else if (date > daysInMonth) {
             break;
           } else {
-            const emoji = emojiByFeeling[1];
-            cell.innerHTML = `<button onclick="showDiary('${year}-${(month + 1).toString().padStart(2, '0')}-${date.toString().padStart(2, '0')}')">${emoji}<br>${date}</button>`;
+            const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${date.toString().padStart(2, '0')}`;
+            const weather = diaryDataByDate[dateStr]?.weather || ' '; // 기본값
+     
+            cell.classList.add('calendar-date');
+            cell.setAttribute('data-date', dateStr);
+            cell.onclick = () => showDiary(dateStr);
+            cell.innerHTML = `
+              ${diaryDataByDate[dateStr]?.weather ? `<span style="font-size: 20px;">${diaryDataByDate[dateStr].weather}</span><br>` : ''}
+              ${date}
+            `;
+
+
+
+            if (j === 0) cell.classList.add('sunday');
+            else if (j === 6) cell.classList.add('saturday');
+
             date++;
           }
           row.appendChild(cell);
@@ -128,6 +148,9 @@
         calendar.appendChild(row);
       }
     }
+
+    
+    
     function prevMonth() {
       currentMonth--;
       if (currentMonth < 0) {
@@ -155,38 +178,37 @@
       return null;
     }
 
+
     function showDiary(dateString) {
-  // 이전 선택된 날짜 버튼에서 강조 제거
-  const prevSelected = document.querySelector('.calendar td button.selected-date');
-  if (prevSelected) {
-    prevSelected.classList.remove('selected-date');
-  }
+      console.log("showDiary called with:", dateString);
+      const prevSelected = document.querySelector('.calendar-date.selected-date');
+      if (prevSelected) {
+        prevSelected.classList.remove('selected-date');
+      }
 
-  // 새로 선택한 날짜 버튼에 강조 적용
-  const buttons = document.querySelectorAll('.calendar td button');
-  buttons.forEach(btn => {
-    if (btn.innerText.includes(parseInt(dateString.split('-')[2], 10))) {
-      btn.classList.add('selected-date');
+      const selectedTd = document.querySelector(`.calendar-date[data-date="${dateString}"]`);
+      if (selectedTd) {
+        selectedTd.classList.add('selected-date');
+        console.log("Selected <td> found?", selectedTd);
+      }
+
+      // 다이어리 내용 표시
+      const container = document.getElementById("diary-container");
+      const entry = dummyDB[dateString];
+      if (entry) {
+        container.innerHTML = `
+          <h3>${dateString}</h3>
+          <h4>${entry.title}</h4>
+          <p>${entry.text}</p>
+          <img src="${entry.image}" alt="다이어리 이미지" style="max-width:100%; height:auto;" />
+        `;
+      } else {
+        container.innerHTML = `
+          <h3>${dateString}</h3>
+          <p>이 날의 다이어리가 없습니다.</p>
+        `;
+      }
     }
-  });
-
-  // 다이어리 영역 업데이트
-  const container = document.getElementById("diary-container");
-  const entry = dummyDB[dateString];
-  if (entry) {
-    container.innerHTML = `
-      <h3>${dateString}</h3>
-      <h4>${entry.title}</h4>
-      <p>${entry.text}</p>
-      <img src="${entry.image}" alt="다이어리 이미지" style="max-width:100%; height:auto;" />
-    `;
-  } else {
-    container.innerHTML = `
-      <h3>${dateString}</h3>
-      <p>이 날의 다이어리가 없습니다.</p>
-    `;
-  }
-}
 
 
     function initMoodCanvas() {
@@ -234,11 +256,27 @@
 
     // 캘린더 초기화 및 로그인 UI 초기화
     window.onload = function() {
+      const today = new Date();
+
+      // 오늘 날짜 기준으로 월과 연도 설정
+      currentMonth = today.getMonth();
+      currentYear = today.getFullYear();
+      
+      // 오늘 날짜 자동 선택
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      const todayStr = `${yyyy}-${mm}-${dd}`;
+
+      // 오늘을 기준으로 캘린더 생성
       generateCalendar(currentMonth, currentYear);  
       updateAuthUI(); 
       initMoodCanvas();
 
-      
+      setTimeout(() => showDiary(todayStr), 0);  // 이벤트 루프 한 번 양보
+
+
+  
     };
 
     

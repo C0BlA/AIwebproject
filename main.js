@@ -18,13 +18,14 @@
 
     const data = await res.json();
     console.log("🚀 로그인 응답:", data);
+
     if (res.ok) {
       alert("로그인 성공");
       localStorage.setItem('token', data.token);
       localStorage.setItem('username', username);
-      console.log("💾 저장된 토큰:", data.token);
-      closeLogin();    
-      updateAuthUI();
+      updateAuthUI(); // UI 상태 업데이트
+      updateRecentDiaries(); // 로그인하자마자 최근 다이어리 불러오기
+      closeLogin(); // 모달 닫기
       window.location.reload();
     } else {
       alert(data.error || '로그인 실패');
@@ -86,7 +87,7 @@
       userInfo.style.display = 'inline-block';
       welcomeMsg.textContent = `환영합니다, ${username}`;
 
-      // ✅ 로그인된 경우에만 다이어리 불러오기
+      // 로그인된 경우에만 다이어리 불러오기
       fetch('http://localhost:3000/api/diaries', {
         headers: {
           'Authorization': 'Bearer ' + token
@@ -130,23 +131,28 @@
 
   //다이어리 저장
   async function saveDiary(dateStr) {
+    console.log("✅ saveDiary 호출됨", dateStr); 
     const title = document.getElementById('diary-title-input').value;
     const text = document.getElementById('diary-text-input').value;
     const imageFile = document.getElementById('diary-image-input').files[0];
     const token = localStorage.getItem('token');
 
-    const weather = document.querySelector('input[name="weather"]:checked')?.value;
+     console.log("📌 받은 토큰:", token); 
+    // const weather = document.querySelector('input[name="weather"]:checked')?.value;
+    const weather = getSelectedWeather();
 
     const formData = new FormData();
     formData.append('date', dateStr);
     formData.append('title', title);
     formData.append('text', text);
-    formData.append('weather', weather || ''); // 선택된 날씨가 없으면 빈 문자열
+    formData.append('weather', weather || ''); 
     if (imageFile) {
       formData.append('image', imageFile);
     }
 
     const res = await fetch('http://localhost:3000/api/diaries', {
+      
+
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + token },
       body: formData
@@ -154,12 +160,20 @@
 
     const data = await res.json();
     if (res.ok) {
-      alert("다이어리가 저장되었습니다!");
-      showDiary(dateStr);
-      updateRecentDiaries(); 
-    } else {
-      alert(data.error || '저장 실패');
-    }
+  alert("다이어리가 저장되었습니다!");
+  showDiary(dateStr);
+  updateRecentDiaries();
+
+  // 캘린더에 날씨 바로 반영!
+  const cell = document.querySelector(`[data-date="${dateStr}"]`);
+  if (cell) {
+    cell.innerHTML = `
+      <span style="font-size:20px;">${weather}</span><br>
+      ${parseInt(dateStr.split('-')[2], 10)}
+    `;
+  }
+}
+
   }
 
 
@@ -199,36 +213,39 @@
         // 저장된 다이어리가 없는 경우
         container.innerHTML = `
           <div id="weather-selection">
-              <h4>${dateStr}</h4>
-              <label>
-                <input type="radio" name="weather" value="sunny" />
-                <img src="images/sunny.png" alt="맑음" width="40" />
-              </label>
-              <label>
-                <input type="radio" name="weather" value="cloudy" />
-                <img src="images/cloudy.png" alt="흐림" width="40" />
-              </label>
-              <label>
-                <input type="radio" name="weather" value="rainy" />
-                <img src="images/rainy.png" alt="비" width="40" />
-              </label>
-              <label>
-                <input type="radio" name="weather" value="thunder" />
-                <img src="images/thunder.png" alt="번개" width="40" />
-              </label>
-              <label>
-                <input type="radio" name="weather" value="snowy" />
-                <img src="images/snowy.png" alt="눈" width="40" />
-              </label>
+            <h4>${dateStr}</h4>
+            <label>
+              <input type="radio" name="weather" value="☀️" />
+              ☀️맑음
+            </label>
+            <label>
+              <input type="radio" name="weather" value="☁️" />
+              ☁️흐림
+            </label>
+            <label>
+              <input type="radio" name="weather" value="☔" />
+              ☔비
+            </label>
+            <label>
+              <input type="radio" name="weather" value="🌩️" />
+              🌩️번개
+            </label>
+            <label>
+              <input type="radio" name="weather" value="❄️" />
+              ❄️눈
+            </label>
           </div>
+
           <input type="text" id="diary-title-input" placeholder="제목을 입력하세요" />
           <textarea id="diary-text-input" rows="5" placeholder="내용을 입력하세요"></textarea>
           <input type="file" id="diary-image-input" accept="image/*" />
+
           <div class="diary-buttons">
             <button onclick="saveDiary('${dateStr}')">저장</button>
             <button onclick="cancelDiary()">취소</button>
           </div>
         `;
+
       }
     } catch (err) {
       alert("다이어리 로드 실패");
@@ -361,12 +378,18 @@
   }
 
   async function updateRecentDiaries() {
-    const token = localStorage.getItem('token');
-    const res = await fetch('http://localhost:3000/api/diaries', {
+  const token = localStorage.getItem('token');
+
+  try {
+    const res = await fetch('http://localhost:3000/api/diaries/recent', {
       headers: {
         'Authorization': 'Bearer ' + token
       }
     });
+
+    if (!res.ok) {
+      throw new Error(` 최근 다이어리 불러오기 실패 (${res.status})`);
+    }
 
     const diaries = await res.json();
 
@@ -375,7 +398,7 @@
 
     diaries.forEach(diary => {
       const li = document.createElement('li');
-      
+
       const link = document.createElement('a');
       link.href = '#';
       link.textContent = `${diary.date}: ${diary.title} (${diary.weather || '날씨 없음'})`;
@@ -388,7 +411,12 @@
       li.appendChild(link);
       recentList.appendChild(li);
     });
+
+  } catch (err) {
+    console.error('updateRecentDiaries 오류:', err);
   }
+}
+
 
   // 오늘-기준 1주일 데이터 저장용 (날짜 → {temp, humid, emoji})
   const moodWeek = {};
@@ -415,3 +443,29 @@
       analyzeWeek();
     }
   }
+
+
+  //선택한 날씨 데이터 가져오기
+  async function fetchMonthlyDiaries(year, month) {
+  diaryDataByDate = {}; // 초기화
+
+  const token = localStorage.getItem('token');
+  const res = await fetch(`http://localhost:3000/api/diaries/month?year=${year}&month=${String(month + 1).padStart(2, '0')}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+
+  if (!res.ok) {
+    console.error("다이어리 데이터 불러오기 실패:", res.status);
+    return;
+  }
+
+  const diaries = await res.json();
+
+  diaries.forEach(diary => {
+    diaryDataByDate[diary.date] = diary;  // 여기서 전체 diary 객체 저장!
+  });
+}
+
+
+
+

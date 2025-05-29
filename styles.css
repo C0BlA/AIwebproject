@@ -171,6 +171,31 @@ body {
   box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
+.calendar-date {
+  text-align: center;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.calendar-date:hover {
+  background-color: #cceaff;
+}
+
+/*캘린더 주말 색깔 다르게*/
+.sunday {
+  color: #e74c3c; /* 빨간색 */
+  font-weight: bold;
+}
+
+.saturday {
+  color: #3498db; /* 파란색 */
+  font-weight: bold;
+}
+
+
+
 /* 다이어리 작성 폼 스타일 */
 
 #weather-selection label {

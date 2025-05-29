@@ -52,12 +52,17 @@ app.post('/api/login', async (req, res) => {
 
 //다이어리 저장
 app.post('/api/diaries',upload.single('image'), async (req, res) => {
+  console.log("POST 요청 들어옴");
   const token = req.headers.authorization?.split(' ')[1];
+  console.log("📌 받은 토큰:", token); 
+
+  console.log("받은 Authorization 헤더:", req.headers.authorization); 
   if (!token) return res.status(401).json({ error: '토큰 없음' });
 
   try {
     const decoded = jwt.verify(token, SECRET);
-    const { date, title, text, weather } = req.body;
+    const { date, title, text, weather} = req.body;
+    console.log("✅ 토큰 검증 성공:", decoded);
     const imageData = req.file ? req.file.buffer.toString('base64') : null;
 
     const newDiary = new Diary({
@@ -72,7 +77,46 @@ app.post('/api/diaries',upload.single('image'), async (req, res) => {
     await newDiary.save();
     res.json({ message: '다이어리 저장 완료' });
   } catch (err) {
+    console.error("❌ 토큰 검증 실패:", err.message); 
     res.status(403).json({ error: '토큰이 유효하지 않음' });
+
+  }
+});
+
+// 최근 다이어리 5개 불러오기
+app.get('/api/diaries/recent', async (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  console.log("📌 받은 토큰:", token); 
+
+  if (!token) return res.status(401).json({ error: '토큰 없음' });
+
+  try {
+    const decoded = jwt.verify(token, SECRET);
+    const userId = decoded.id;
+
+    const diaries = await Diary.find({ userId })
+      .sort({ updatedAt: -1 }) 
+      .limit(7); 
+
+    res.json(diaries);
+  } catch (err) {
+    res.status(403).json({ error: '토큰이 유효하지 않음' });
+  }
+});
+
+//월별 다이어리리
+app.get('/api/diaries/month', async (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) return res.status(401).json({ error: '토큰 없음' });
+
+  try {
+    const decoded = jwt.verify(token, SECRET);
+    const { year, month } = req.query;
+    const regex = new RegExp(`^${year}-${month.padStart(2, '0')}-\\d{2}$`);
+    const diaries = await Diary.find({ userId: decoded.id, date: regex });
+    res.json(diaries);
+  } catch (err) {
+    res.status(403).json({ error: '토큰 유효하지 않음' });
   }
 });
 
@@ -138,24 +182,3 @@ app.delete('/api/diaries/:date', async (req, res) => {
 });
 
 app.listen(3000, () => console.log('서버 실행 중: http://localhost:3000'));
-
-
-
-// 최근 다이어리 5개 불러오기
-app.get('/api/diaries', async (req, res) => {
-  const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return res.status(401).json({ error: '토큰 없음' });
-
-  try {
-    const decoded = jwt.verify(token, SECRET);
-    const userId = decoded.id;
-
-    const diaries = await Diary.find({ userId })
-      .sort({ updatedAt: -1 }) 
-      .limit(7); 
-
-    res.json(diaries);
-  } catch (err) {
-    res.status(403).json({ error: '토큰이 유효하지 않음' });
-  }
-});
