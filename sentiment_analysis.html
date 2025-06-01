@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>감정 분석 대시보드 - D3</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="main.js"></script>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:#f9fafc; padding:20px; }
+    #dashboard { width:1600px; margin:0 auto; background:#fff; padding:20px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.1); }
+    h2 { color:#2d6ca7; margin-bottom:20px; }
+    #weather-chart, #emotion-line-chart {
+      flex: 1 1 600px;
+      width: 600px;
+      height: 600px;
+    }
+    .chart-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-around;
+      gap: 20px;
+      align-items: flex-start;
+    }  
+    svg { background:#f0f4f8; border-radius:10px; box-shadow:0 3px 8px rgba(0,0,0,0.05); }
+    .week-label { font-weight:bold; fill:#1a3e75; }
+    .emoji-text { font-size: 26px; pointer-events:none; user-select:none; }
+    .line-point { fill:#1976d2; stroke:#fff; stroke-width:2px; cursor:pointer; }
+    .line-path { stroke:#1976d2; stroke-width:2; fill:none; }
+    .weighted-line { stroke:red; stroke-width:3; stroke-dasharray:5 3; }
+    .weighted-point { fill:red; stroke:#fff; stroke-width:2px; }
+  </style>
+</head>
+<body>
+
+<div class="header-bar">
+  <button class="sidebar-toggle-btn" onclick="toggleSidebar()">☰ 메뉴</button>
+  <a href="/" class="home-link">감정다이어리</a>
+
+  <div class="auth-buttons" id="auth-buttons">
+    <button onclick="openLogin()">로그인</button>
+    <button onclick="openRegister()">회원가입</button>
+  </div>
+  <div class="logout-buttons" id="user-info" style="display: none;">
+    <span id="welcome-msg"></span>
+    <button onclick="logout()">로그아웃</button>
+  </div>
+</div>
+
+<!-- 로그인 모달 -->
+<div id="login-modal" class="modal">
+  <form onsubmit="login(); return false;" autocomplete="off">
+    <h3>로그인</h3>
+    <input type="text" id="login-id" placeholder="아이디" required /><br/><br/>
+    <input type="password" id="login-pw" placeholder="비밀번호" required /><br/><br/>
+    <button type="submit">로그인</button>
+    <button type="button" onclick="closeLogin()">닫기</button>
+  </form>
+</div>
+
+<!-- 회원가입 모달 -->
+<div id="register-modal" class="modal">
+  <form onsubmit="register(); return false;" autocomplete="off">
+    <h3>회원가입</h3>
+    <input type="text" id="register-id" placeholder="아이디" required /><br/><br/>
+    <input type="password" id="register-pw" placeholder="비밀번호" required /><br/><br/>
+    <button type="submit">가입하기</button>
+    <button type="button" onclick="closeRegister()">닫기</button>
+  </form>
+</div>
+
+<div class="container">
+  <div class="sidebar" id="sidebar">
+    <button class="toggle-btn" onclick="toggleSidebar()">← 닫기</button>
+    <h2>1주일 감정 분석</h2>
+    <p>외로움을 느끼고 있습니다.<br>친구들과 만나보시는건 어떠신가요?</p>
+    <button class="sentiment-analysis-btn" onclick="location.href='sentiment_analysis.html'">상세 분석 보러가기</button>
+    <h2>최근 다이어리</h2>
+    <ul id="recent-diary-list"></ul>
+  </div>
+
+  <div id="dashboard">
+    <h2>최근 3주 감정 & 날씨 분석</h2>
+    <div class="chart-container">
+      <div id="weather-chart"></div>
+      <div id="emotion-line-chart"></div>
+    </div>
+  </div>
+
+<script>
+// 날씨 이모지를 감정 벡터로 매핑
+const emojiToVector = {
+  '⛅': { x: 0.3, y: 0.2 }, '☀️': { x: 0.7, y: 0.5 }, '🌞': { x: 1.0, y: 0.8 },
+  '🌫': { x: -0.2, y: -0.3 }, '🌦': { x: -0.5, y: -0.6 }, '🌧': { x: -0.8, y: -1.0 },
+  '🌬': { x: -0.3, y: 0.2 }, '⛈': { x: -0.6, y: 0.4 }, '🌪': { x: -1.0, y: 0.6 },
+  '🌁': { x: -0.3, y: -0.1 }, '🌫️': { x: -0.5, y: -0.5 }, '🌪️': { x: -0.9, y: -0.9 },
+  '🌙': { x: -0.1, y: -0.4 }, '🌨': { x: -0.4, y: -0.7 }, '❄️': { x: -0.7, y: -1.0 }
+};
+
+function processWeatherVectors(emojiArray, emojiToVector) {
+  const result = [];
+  for (let i = 0; i < 3; i++) {
+    const weekSlice = emojiArray.slice(i * 7, (i + 1) * 7);
+    const vectors = weekSlice.filter(e => typeof e === 'string' && emojiToVector[e])
+                             .map(e => emojiToVector[e]);
+    if (vectors.length === 0) {
+      result.unshift({ week: `${3 - i}주 전`, x: null, y: null });
+      continue;
+    }
+    const avgX = d3.mean(vectors, v => v.x);
+    const avgY = d3.mean(vectors, v => v.y);
+    result.unshift({ week: `${3 - i}주 전`, x: avgX, y: avgY });
+  }
+  return result;
+}
+
+function drawWeatherRadialChart(emojiArray) {
+  const width = 600, height = 600;
+  const svg = d3.select("#weather-chart").html("")
+    .append("svg").attr("width", width).attr("height", height);
+  const centerX = width / 2, centerY = height / 2;
+  const radius = 200;
+
+  for (let week = 0; week < 3; week++) {
+    const weekData = emojiArray.slice(week * 7, (week + 1) * 7);
+    const innerRadius = radius - week * 60;
+
+    weekData.forEach((emoji, i) => {
+      if (!emoji || typeof emoji !== 'string') return;
+      const angle = (i / 7) * 2 * Math.PI - Math.PI / 2;
+      const x = centerX + innerRadius * Math.cos(angle);
+      const y = centerY + innerRadius * Math.sin(angle);
+      svg.append("text")
+        .attr("class", "emoji-text")
+        .attr("x", x)
+        .attr("y", y)
+        .text(emoji);
+    });
+
+    svg.append("text")
+      .attr("class", "week-label")
+      .attr("x", centerX)
+      .attr("y", centerY - innerRadius - 10)
+      .text(`${3 - week}주 전`);
+  }
+}
+
+function drawEmotionLineGraph(vectors) {
+  const width = 600, height = 600;
+  const margin = {top: 40, right: 40, bottom: 40, left: 40};
+  const innerWidth = width - margin.left - margin.right;
+  const innerHeight = height - margin.top - margin.bottom;
+
+  const svg = d3.select("#emotion-line-chart").html("")
+    .append("svg").attr("width", width).attr("height", height);
+  const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+  const xScale = d3.scaleLinear().domain([-1,1]).range([0, innerWidth]);
+  const yScale = d3.scaleLinear().domain([-1,1]).range([innerHeight, 0]);
+
+  g.append("g").attr("transform", `translate(0,${innerHeight/2})`).call(d3.axisBottom(xScale));
+  g.append("g").attr("transform", `translate(${innerWidth/2},0)`).call(d3.axisLeft(yScale));
+
+  const points = vectors.filter(v => v.x != null && v.y != null).map(v => ({
+    ...v,
+    x: xScale(v.x),
+    y: yScale(v.y),
+  }));
+
+  const line = d3.line().x(d => d.x).y(d => d.y);
+  g.append("path").datum(points).attr("class", "line-path").attr("d", line);
+
+  g.selectAll(".line-point")
+    .data(points).join("circle")
+    .attr("class", "line-point").attr("r", 6)
+    .attr("cx", d => d.x).attr("cy", d => d.y)
+    .append("title").text(d => d.week + ` (${d.x.toFixed(2)}, ${d.y.toFixed(2)})`);
+
+  if (points.length > 0) {
+    const avgX = d3.mean(points, d => d.rawX ?? d.x);
+    const avgY = d3.mean(points, d => d.rawY ?? d.y);
+    const screenX = xScale(avgX);
+    const screenY = yScale(avgY);
+
+    g.append("line")
+      .attr("x1", screenX - 10).attr("x2", screenX + 10)
+      .attr("y1", screenY).attr("y2", screenY)
+      .attr("class", "weighted-line");
+    g.append("line")
+      .attr("x1", screenX).attr("x2", screenX)
+      .attr("y1", screenY - 10).attr("y2", screenY + 10)
+      .attr("class", "weighted-line");
+
+    g.append("circle")
+      .attr("cx", screenX).attr("cy", screenY).attr("r", 8)
+      .attr("class", "weighted-point")
+      .append("title")
+      .text(`평균 감정 (${avgX.toFixed(2)}, ${avgY.toFixed(2)})`);
+  }
+}
+
+// 페이지 로딩 시 실행
+document.addEventListener("DOMContentLoaded", async () => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    alert("로그인이 필요합니다.");
+    return;
+  }
+
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth();
+
+  try {
+    const res = await fetch(`http://localhost:3000/api/diaries/month?year=${year}&month=${String(month + 1).padStart(2, '0')}`, {
+      headers: {
+        'Authorization': 'Bearer ' + token
+      }
+    });
+
+    if (!res.ok) throw new Error("데이터 요청 실패");
+
+    const data = await res.json();
+    const weatherEmojis = [];
+
+    const byDate = {};
+    data.forEach(d => byDate[d.date] = d);
+
+    for (let i = 20; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(today.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+
+      const diary = byDate[dateStr];
+      if (diary && diary.weather) {
+        weatherEmojis.push(diary.weather);
+      } else {
+        weatherEmojis.push(null);
+      }
+    }
+
+    const vectors = processWeatherVectors(weatherEmojis, emojiToVector);
+    drawWeatherRadialChart(weatherEmojis);
+    drawEmotionLineGraph(vectors);
+  } catch (err) {
+    console.error("감정 분석 실패:", err);
+  }
+});
+</script>
+
+</body>
+</html>

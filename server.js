@@ -189,4 +189,58 @@ app.delete('/api/diaries/:date', async (req, res) => {
   }
 });
 
+app.get('/api/emotions/vectors', async (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) return res.status(401).json({ error: '토큰 없음' });
+
+  try {
+    const decoded = jwt.verify(token, SECRET);
+    const diaries = await Diary.find({ userId: decoded.id })
+      .sort({ date: -1 })
+      .limit(21); // 최근 3주
+
+    const emojiToVector = {
+      '⛅': { x: 0.3, y: 0.2 },
+      '☀️': { x: 0.7, y: 0.5 },
+      '🌞': { x: 1.0, y: 0.8 },
+
+      '🌫': { x: -0.2, y: -0.3 },
+      '🌦': { x: -0.5, y: -0.6 },
+      '🌧': { x: -0.8, y: -1.0 },
+
+      '🌬': { x: -0.3, y: 0.2 },
+      '⛈': { x: -0.6, y: 0.4 },
+      '🌪': { x: -1.0, y: 0.6 },
+
+      '🌁': { x: -0.3, y: -0.1 },
+      '🌫️': { x: -0.5, y: -0.5 },
+      '🌪️': { x: -0.9, y: -0.9 },
+
+      '🌙': { x: -0.1, y: -0.4 },
+      '🌨': { x: -0.4, y: -0.7 },
+      '❄️': { x: -0.7, y: -1.0 },
+    };
+    const weeklyVectors = [];
+
+    for (let i = 0; i < 3; i++) {
+      const weekData = diaries.slice(i * 7, (i + 1) * 7);
+      if (weekData.length === 0) continue;
+
+      const vectors = weekData.map(d => {
+        const v = emojiToVector[d.weather];
+        return v || { x: 0, y: 0 }; // 매핑 없는 건 무시
+      });
+
+      const avgX = vectors.reduce((acc, v) => acc + v.x, 0) / vectors.length;
+      const avgY = vectors.reduce((acc, v) => acc + v.y, 0) / vectors.length;
+
+      weeklyVectors.push({ x: avgX, y: avgY, week: i + 1 });
+    }
+
+    res.json(weeklyVectors);
+  } catch (err) {
+    res.status(403).json({ error: '토큰 유효하지 않음' });
+  }
+});
+
 app.listen(3000, () => console.log('서버 실행 중: http://localhost:3000'));

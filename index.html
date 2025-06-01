@@ -55,7 +55,8 @@
       <h2>1주일 감정 분석</h2>
       <!-- <canvas id="moodCanvas" width="400" height="400" style="border:1px solid #ccc; max-width:100%;"> -->
       <p>외로움을 느끼고 있습니다.<br>친구들과 만나보시는건 어떠신가요?</p>
-      </canvas>
+      <button class="sentiment-analysis-btn"  onclick="location.href='sentiment_analysis.html'">상세 분석 보러가기기</button>
+
       <h2>최근 다이어리</h2>
       <ul id="recent-diary-list">
       </ul>
@@ -294,6 +295,11 @@
 
       setTimeout(() => showDiary(todayStr), 0);  // 이벤트 루프 한 번 양보
 
+      const urlParams = new URLSearchParams(window.location.search);
+      const selectedDate = urlParams.get('date');
+      if (selectedDate) {
+        showDiary(selectedDate);
+      }
 
   
     };

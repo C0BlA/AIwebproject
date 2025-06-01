@@ -1,0 +1,74 @@
+/* 감정 분석 영역 스타일 */
+#emotion-analysis {
+  background-color: #ffffff;
+  border-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  color: #2a5d9f;
+  font-family: 'Helvetica Neue', sans-serif;
+}
+
+/* 날씨 선택 버튼 */
+#weather-selection {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+#weather-selection label {
+  cursor: pointer;
+  opacity: 0.7;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+#weather-selection input[type="radio"] {
+  display: none;
+}
+
+#weather-selection input[type="radio"]:checked + img {
+  border: 2px solid #2d6ca7;
+  border-radius: 10px;
+  opacity: 1;
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(45, 108, 167, 0.2);
+}
+
+/* 감정 그래프 */
+#emotion-graph,
+#vector-graph,
+#recommendation-graph {
+  margin-top: 30px;
+  background-color: #f9fcff;
+  border-radius: 12px;
+  padding: 15px;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.05);
+}
+
+/* 추천 행동 */
+#recommendation {
+  margin-top: 20px;
+  background-color: #e6f4ff;
+  border-left: 5px solid #2d6ca7;
+  padding: 16px;
+  border-radius: 10px;
+  color: #1a3e75;
+  font-weight: bold;
+}
+
+/* 공통 버튼 스타일 */
+.emotion-btn {
+  background-color: #2d6ca7;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  transition: background-color 0.3s;
+}
+
+.emotion-btn:hover {
+  background-color: #1a4b7c;
+}
