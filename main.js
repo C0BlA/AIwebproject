@@ -567,25 +567,8 @@ async function loadEmojiArray() {
 
     const diaries = await res.json();
     diaries.forEach(diary => {
-      diaryDataByDate[diary.date] = diary;  // 전체 diary 객체 저장
+      diaryDataByDate[diary.date] = diary; // 월별 데이터는 달력 표시용으로만 사용
     });
-
-    // ✅ 3주치 데이터만 추출 (최신 주차 포함해서 총 21일치)
-    const today = new Date();
-    const weatherEmojis = [];
-
-    for (let i = 20; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(today.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
-
-      const diary = diaryDataByDate[dateStr];
-      if (diary && diary.weatherEmoji) {
-        weatherEmojis.push(diary.weatherEmoji);
-      } else {
-        weatherEmojis.push(null); // 값 없을 땐 null로
-      }
-    }
 
     try {
       const processedVectors = processWeatherVectors(weatherEmojis, emojiToVector);
@@ -595,6 +578,11 @@ async function loadEmojiArray() {
       console.error("감정 분석 실패:", err.message);
     }
   }
+function normalizeEmoji(e) {
+  return typeof e === 'string' ? e.replace(/\uFE0F/g, '') : e;
+}
+
+// 분석 진입점
 document.addEventListener("DOMContentLoaded", async () => {
   const token = localStorage.getItem('token');
   if (!token) {
@@ -602,49 +590,26 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth();
-
   try {
-    const res = await fetch(`http://localhost:3000/api/diaries/month?year=${year}&month=${String(month + 1).padStart(2, '0')}`, {
-      headers: {
-        'Authorization': 'Bearer ' + token
-      }
+    const res = await fetch('http://localhost:3000/api/diaries/last21days', {
+      headers: { 'Authorization': 'Bearer ' + token }
     });
 
-    if (!res.ok) throw new Error("데이터 요청 실패");
+    if (!res.ok) throw new Error("최근 21일 다이어리 요청 실패");
 
     const data = await res.json();
-    const weatherEmojis = [];
 
-    // 최근 3주간 날짜 기준으로 정렬
-    const todayStr = today.toISOString().split('T')[0];
-    const byDate = {};
-    data.forEach(d => byDate[d.date] = d);
+    const weatherEmojis = data.map(d => normalizeEmoji(d.weather || null));
 
-    for (let i = 20; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(today.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
-
-      const diary = byDate[dateStr];
-      if (diary && diary.weather) {
-        weatherEmojis.push(diary.weather);
-      } else {
-        weatherEmojis.push(null);
-      }
-    }
+    console.log("✅ 가져온 weather 이모지:", weatherEmojis);
 
     const vectors = processWeatherVectors(weatherEmojis, emojiToVector);
     drawWeatherRadialChart(weatherEmojis);
     drawEmotionLineGraph(vectors);
-
   } catch (err) {
-    console.error("분석 실패:", err);
+    console.error("🔥 감정 분석 실패:", err);
   }
 });
-
 
 
 

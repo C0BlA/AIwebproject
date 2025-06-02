@@ -237,6 +237,48 @@ app.get('/api/emotions/vectors', async (req, res) => {
       weeklyVectors.push({ x: avgX, y: avgY, week: i + 1 });
     }
 
+    app.get('/api/diaries/last21days', async (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) return res.status(401).json({ error: '토큰 없음' });
+
+  try {
+    const decoded = jwt.verify(token, SECRET);
+    const userId = decoded.id;
+
+    // 오늘 기준 최근 21일 날짜 계산
+    const today = new Date();
+    const dates = [];
+    for (let i = 20; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      dates.push(dateStr);
+    }
+
+    // DB에서 21일치 다이어리 중 해당 날짜들만 가져오기
+    const diaries = await Diary.find({
+      userId,
+      date: { $in: dates }
+    });
+
+    // 날짜 기준으로 매핑
+    const diaryMap = {};
+    diaries.forEach(d => { diaryMap[d.date] = d; });
+
+    // 21일치 완성된 배열로 재구성 (없는 날은 null)
+    const result = dates.map(date => ({
+      date,
+      weather: diaryMap[date]?.weather || null
+    }));
+
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(403).json({ error: '토큰이 유효하지 않음' });
+  }
+});
+
+
     res.json(weeklyVectors);
   } catch (err) {
     res.status(403).json({ error: '토큰 유효하지 않음' });

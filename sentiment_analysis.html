@@ -246,6 +246,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("감정 분석 실패:", err);
   }
 });
+
+function normalizeEmoji(e) {
+  return typeof e === 'string' ? e.replace(/\uFE0F/g, '') : e;
+}
 </script>
 
 </body>
