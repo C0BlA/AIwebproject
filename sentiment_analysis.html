@@ -121,9 +121,10 @@ function drawWeatherRadialChart(emojiArray) {
   const centerX = width / 2, centerY = height / 2;
   const radius = 200;
 
-  for (let week = 0; week < 3; week++) {
+  // 안쪽에 최신, 바깥에 오래된 주차가 나오도록 순서 뒤집기
+  for (let week = 2; week >= 0; week--) {
     const weekData = emojiArray.slice(week * 7, (week + 1) * 7);
-    const innerRadius = radius - week * 60;
+    const innerRadius = radius - (2 - week) * 60;  // 최근일수록 안쪽
 
     weekData.forEach((emoji, i) => {
       if (!emoji || typeof emoji !== 'string') return;
@@ -141,7 +142,7 @@ function drawWeatherRadialChart(emojiArray) {
       .attr("class", "week-label")
       .attr("x", centerX)
       .attr("y", centerY - innerRadius - 10)
-      .text(`${3 - week}주 전`);
+      .text(`${3 - week}주 전`);  // 레이블은 그대로
   }
 }
 

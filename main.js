@@ -492,7 +492,7 @@
 async function loadEmojiArray() {
   try {
     const token = localStorage.getItem('token');
-    const res = await fetch(`http://localhost:3000/api/diaries/recent/21`, {
+    const res = await fetch(`http://localhost:3000/api/diaries/last21days`, {
       headers: {
         'Authorization': 'Bearer ' + token
       }
@@ -504,51 +504,44 @@ async function loadEmojiArray() {
 
     const data = await res.json();
 
+    // 날씨 이모지 또는 '❓'로 매핑
     const emojiArray = data.map(entry => entry.weather || '❓');
 
-    if (emojiArray.length !== 21) {
-      console.warn(`⛔ 이모지 개수 부족 (${emojiArray.length}/21). 채워 넣습니다.`);
-      while (emojiArray.length < 21) {
-        emojiArray.unshift('❓');
-      }
-    }
-
+    // ✅ 항상 정확히 21개가 날짜순으로 정렬되어 있음
     return emojiArray;
   } catch (error) {
     console.error('loadEmojiArray 에러:', error);
-    // 실패했을 때 21개 ❓ 배열을 반환하도록 안전장치
     return Array(21).fill('❓');
   }
 }
 
 
 
+  // // 오늘-기준 1주일 데이터 저장용 (날짜 → {temp, humid, emoji})
+  // const moodWeek = {};
+  // // 1주일 기준으로 분석
+  // const DAYS_IN_WEEK = 7;
 
-  // 오늘-기준 1주일 데이터 저장용 (날짜 → {temp, humid, emoji})
-  const moodWeek = {};
-  // 1주일 기준으로 분석
-  const DAYS_IN_WEEK = 7;
+  // function plotMoodPoint(dateKey, temp, humid, emoji) {
+  //   const canvas = document.getElementById("moodCanvas");
+  //   const ctx = canvas.getContext("2d");
 
-  function plotMoodPoint(dateKey, temp, humid, emoji) {
-    const canvas = document.getElementById("moodCanvas");
-    const ctx = canvas.getContext("2d");
+  //   // 온도 0~40, 습도 0~100을 캔버스 좌표로 변환
+  //   const x = 40 + (temp / 40) * (canvas.width - 60);
+  //   const y = canvas.height - 40 - (humid / 100) * (canvas.height - 60);
 
-    // 온도 0~40, 습도 0~100을 캔버스 좌표로 변환
-    const x = 40 + (temp / 40) * (canvas.width - 60);
-    const y = canvas.height - 40 - (humid / 100) * (canvas.height - 60);
+  //   // 이모지를 텍스트로 찍기
+  //   ctx.font = "24px sans-serif";
+  //   ctx.fillText(emoji, x - 12, y + 8);
 
-    // 이모지를 텍스트로 찍기
-    ctx.font = "24px sans-serif";
-    ctx.fillText(emoji, x - 12, y + 8);
+  //   // 데이터 저장/갱신
+  //   moodWeek[dateKey] = { temp, humid, emoji };
 
-    // 데이터 저장/갱신
-    moodWeek[dateKey] = { temp, humid, emoji };
-
-    // 1주일(7개) 채워졌으면 분석 실행
-    if (Object.keys(moodWeek).length === DAYS_IN_WEEK) {
-      analyzeWeek();
-    }
-  }
+  //   // 1주일(7개) 채워졌으면 분석 실행
+  //   if (Object.keys(moodWeek).length === DAYS_IN_WEEK) {
+  //     analyzeWeek();
+  //   }
+  // }
 
 
   //선택한 날씨 데이터 가져오기
@@ -579,10 +572,9 @@ async function loadEmojiArray() {
     }
   }
 function normalizeEmoji(e) {
-  return typeof e === 'string' ? e.replace(/\uFE0F/g, '') : e;
+  return typeof e === 'string' ? e.replace(/\uFE0F/g, '') : '❓';
 }
 
-// 분석 진입점
 document.addEventListener("DOMContentLoaded", async () => {
   const token = localStorage.getItem('token');
   if (!token) {
@@ -599,7 +591,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const data = await res.json();
 
-    const weatherEmojis = data.map(d => normalizeEmoji(d.weather || null));
+    const weatherEmojis = data.map(d => normalizeEmoji(d.weather));
 
     console.log("✅ 가져온 weather 이모지:", weatherEmojis);
 
