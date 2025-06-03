@@ -6,6 +6,7 @@ const cors = require('cors');
 const Diary = require('./diary'); 
 const SECRET="AIwebproject123!";
 const multer = require('multer');
+const e = require('express');
 
 const app = express();
 app.use(cors());
@@ -61,14 +62,14 @@ app.post('/api/diaries',upload.single('image'), async (req, res) => {
 
   try {
     const decoded = jwt.verify(token, SECRET);
-    const { date, title, text, weather} = req.body;
+    const { date, title, text, emotion} = req.body;
     console.log("✅ 토큰 검증 성공:", decoded);
     const imageData = req.file ? req.file.buffer.toString('base64') : null;
 
     const newDiary = new Diary({
       userId: decoded.id,  
       date,
-      weather,
+      emotion,
       title,
       text,
       imageData
@@ -148,10 +149,10 @@ app.get('/api/diaries/:date', async (req, res) => {
 
     try {
       const decoded = jwt.verify(token, SECRET);
-      const { title, text, weather } = req.body;
+      const { title, text, emotion } = req.body;
       const imageData = req.file ? req.file.buffer.toString('base64') : undefined;
 
-      const updateFields = { title, text, weather };
+      const updateFields = { title, text, emotion };
       if (imageData) updateFields.imageData = imageData;
 
       const updated = await Diary.findOneAndUpdate(

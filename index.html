@@ -3,6 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
+
   <title>감정 다이어리</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -52,10 +56,7 @@
   <div class="container">
     <div class="sidebar" id="sidebar">
       <button class="toggle-btn" onclick="toggleSidebar()">← 닫기</button>
-      <h2>1주일 감정 분석</h2>
-      <!-- <canvas id="moodCanvas" width="400" height="400" style="border:1px solid #ccc; max-width:100%;"> -->
-      <p>외로움을 느끼고 있습니다.<br>친구들과 만나보시는건 어떠신가요?</p>
-      </canvas>
+      <button id="analyzeMoodBtn">감정 분석</button>
       <h2>최근 다이어리</h2>
       <ul id="recent-diary-list">
       </ul>
@@ -72,22 +73,30 @@
           <table class="calendar" id="calendar"></table>
         </div>
 
-        <div class="diary-container" id="diary-container">
-          
-          
-          <p>날짜를 선택해주세요.</p>
-        </div>
-      </div>
+          <div class="diary-container" id="diary-container">
+            
+            
+            <p>날짜를 선택해주세요.</p>
 
-      <div class="footer-player">
+              <div id="mood-analysis" style="display: none;">
+              <canvas id="quadrantPieChart"></canvas>
+              <canvas id="moodVectorChart"></canvas>
+        </div>
+        
+      </div>
+      </div>
+      
+    </div>
+    
+    
+  </div>
+  <div class="footer-player">
         <iframe width="100%" height="100" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/366653432&color=%2344545c&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true"></iframe>
         <div style="font-size: 10px; color: #cccccc; word-break: break-word; font-family: sans-serif;">
           <a href="https://soundcloud.com/nawhij" target="_blank">nawhij</a> · 
           <a href="https://soundcloud.com/nawhij/so-glad" target="_blank">So Glad</a>
-        </div>
-      </div>
-    </div>
   </div>
+  
 
   <!-- 캘린더 및 다이어리 스크립트 -->
   <script>
@@ -144,13 +153,13 @@
             break;
           } else {
             const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${date.toString().padStart(2, '0')}`;
-            const weather = diaryDataByDate[dateStr]?.weather || ' ';  // 기본값
+            const emotion = diaryDataByDate[dateStr]?.emotion || ' ';  // 기본값
      
             cell.classList.add('calendar-date');
             cell.setAttribute('data-date', dateStr);
             cell.onclick = () => showDiary(dateStr);
             cell.innerHTML = `
-              <span style="font-size:20px; display:inline-block; height:24px;">${diaryDataByDate[dateStr]?.weather || ''}</span><br>
+              <span style="font-size:20px; display:inline-block; height:24px;">${diaryDataByDate[dateStr]?.emotion || ''}</span><br>
               ${date}
             `;
 
@@ -167,6 +176,7 @@
         calendar.appendChild(row);
       }
     }
+    
 
     
     
@@ -230,43 +240,45 @@
     }
 
 
-    function initMoodCanvas() {
-      const canvas = document.getElementById("moodCanvas");
-      const ctx = canvas.getContext("2d");
+document.getElementById('analyzeMoodBtn').addEventListener('click', async () => {
+  const token = localStorage.getItem("token");
+  const res = await fetch("http://localhost:3000/api/diaries/recent", {
+    headers: { Authorization: "Bearer " + token }
+  });
+  const diaries = await res.json();
 
-      // ① 배경 지우기
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const today = new Date();
+  const threeWeeksAgo = new Date();
+  threeWeeksAgo.setDate(today.getDate() - 20);
+  const filtered = diaries
+    .filter(d => new Date(d.date) >= threeWeeksAgo)
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-      // ② 축: 온도(X: 0~40℃) / 습도(Y: 0~100%)
-      ctx.strokeStyle = "#888";
-      ctx.lineWidth = 1;
+  const emotionCounts = countEmotionLabels(filtered);
+  const vectorPoints = generateEmotionHistoryPoints(filtered);
 
-      // X축 (아래쪽)
-      ctx.beginPath();
-      ctx.moveTo(40, canvas.height - 40);
-      ctx.lineTo(canvas.width - 10, canvas.height - 40);
-      ctx.stroke();
-      // Y축 (왼쪽)
-      ctx.beginPath();
-      ctx.moveTo(40, canvas.height - 40);
-      ctx.lineTo(40, 10);
-      ctx.stroke();
+  // 벡터 평균 계산
+  const avg = vectorPoints.reduce((sum, p) => {
+    return { x: sum.x + p.x, y: sum.y + p.y };
+  }, { x: 0, y: 0 });
 
-      // 축 라벨
-      ctx.font = "12px sans-serif";
-      ctx.fillText("온도(℃)", canvas.width / 2 - 20, canvas.height - 10);
-      ctx.fillText("습도(%)", 5, 20);
+  const vectorSum = {
+    x: vectorPoints.length ? avg.x / vectorPoints.length : 0,
+    y: vectorPoints.length ? avg.y / vectorPoints.length : 0
+  };
 
-      // 눈금선(간단히 4등분 예시)
-      const xStep = (canvas.width - 60) / 4;   // 0,10,20,30,40
-      const yStep = (canvas.height - 60) / 4;  // 0,25,50,75,100
-      for (let i = 0; i <= 4; i++) {
-        // X축 눈금
-        ctx.fillText(i * 10, 40 + i * xStep - 5, canvas.height - 25);
-        // Y축 눈금
-        ctx.fillText(i * 25, 10, canvas.height - 40 - i * yStep + 4);
-      }
-    }
+  const container = document.getElementById("diary-container");
+  container.innerHTML = `
+    <h2>최근 3주 감정 분석</h2>
+  <canvas id="quadrantPieChart" width="100 height="100" style="margin-bottom:20px;"></canvas>
+  <canvas id="moodVectorChart" width="100" height="100"></canvas>
+  `;
+
+  drawEmotionPieChart(emotionCounts);
+  drawMoodVector(vectorSum, vectorPoints);
+});
+
+
 
 
     function toggleSidebar() {
@@ -303,6 +315,7 @@
   </script>
 
   <script src="main.js"></script>
+  <script src="analysis.js"></script>
   <script src="diary.js"></script>
 </body>
 </html>
