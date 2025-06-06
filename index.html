@@ -270,8 +270,12 @@ document.getElementById('analyzeMoodBtn').addEventListener('click', async () => 
   const container = document.getElementById("diary-container");
   container.innerHTML = `
     <h2>최근 3주 감정 분석</h2>
-  <canvas id="quadrantPieChart" width="100 height="100" style="margin-bottom:20px;"></canvas>
-  <canvas id="moodVectorChart" width="100" height="100"></canvas>
+    <p class="analysis-period">
+      분석 기간: ${threeWeeksAgo.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })} ~ 
+      ${today.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
+    </p>
+    <canvas id="quadrantPieChart" width="100" height="100" style="margin-bottom:20px;"></canvas>
+    <canvas id="moodVectorChart" width="100" height="100"></canvas>
   `;
 
   drawEmotionPieChart(emotionCounts);

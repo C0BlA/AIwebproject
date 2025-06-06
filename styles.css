@@ -264,11 +264,13 @@ body, html {
 }
 
 .footer-player {
-  background: #ffffff;
-  border-radius: 15px 15px 0 0;
-  box-shadow: 0 -4px 8px rgba(0,0,0,0.1);
-  overflow: hidden;
-  height: 100px;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: white;
+  z-index: 1000;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
 }
 
  /* 로그인&회원가입 */
