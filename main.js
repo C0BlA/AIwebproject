@@ -220,10 +220,10 @@ async function showDiary(dateStr) {
       <h4>${dateStr}</h4>
       <div id="emotion-selection">
         <div>
-          <label><input type="radio" name="quadrant" value="1" onchange="onQuadrantChange(1)"> 긍정+고각성</label>
-          <label><input type="radio" name="quadrant" value="2" onchange="onQuadrantChange(2)"> 부정+고각성</label>
-          <label><input type="radio" name="quadrant" value="3" onchange="onQuadrantChange(3)"> 부정+비활성</label>
-          <label><input type="radio" name="quadrant" value="4" onchange="onQuadrantChange(4)"> 긍정+비활성</label>
+          <label><input type="radio" name="quadrant" value="1" onchange="onQuadrantChange(1)"> 🤩</label>
+          <label><input type="radio" name="quadrant" value="2" onchange="onQuadrantChange(2)"> 😬</label>
+          <label><input type="radio" name="quadrant" value="3" onchange="onQuadrantChange(3)"> 😪</label>
+          <label><input type="radio" name="quadrant" value="4" onchange="onQuadrantChange(4)"> 🧘</label>
         </div>
         <select id="emotion-detail"><option>먼저 분면을 선택하세요</option></select>
       </div>
@@ -261,10 +261,10 @@ function editDiary(dateStr) {
       <h3>${dateStr}</h3>
       <div id="emotion-selection">
         <div>
-          <label><input type="radio" name="quadrant" value="1" onchange="onQuadrantChange(1)"> 긍정+고각성</label>
-          <label><input type="radio" name="quadrant" value="2" onchange="onQuadrantChange(2)"> 부정+고각성</label>
-          <label><input type="radio" name="quadrant" value="3" onchange="onQuadrantChange(3)"> 부정+비활성</label>
-          <label><input type="radio" name="quadrant" value="4" onchange="onQuadrantChange(4)"> 긍정+비활성</label>
+          <label><input type="radio" name="quadrant" value="1" onchange="onQuadrantChange(1)"> 😊</label>
+          <label><input type="radio" name="quadrant" value="2" onchange="onQuadrantChange(2)"> 😬</label>
+          <label><input type="radio" name="quadrant" value="3" onchange="onQuadrantChange(3)"> 😪</label>
+          <label><input type="radio" name="quadrant" value="4" onchange="onQuadrantChange(4)"> 🧘</label>
         </div>
         <select id="emotion-detail">
           <option value="${data.emotion}" selected>${data.emotion}</option>
