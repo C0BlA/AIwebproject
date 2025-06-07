@@ -271,6 +271,29 @@ body, html {
   background: white;
   z-index: 1000;
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease-in-out;
+}
+
+.footer-player.hidden {
+  transform: translateY(100%);
+}
+
+.player-toggle-btn {
+  position: absolute;
+  top: -30px;
+  right: 20px;
+  background: #2d6ca7;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 5px 5px 0 0;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.player-toggle-btn:hover {
+  background: #1a4b7c;
 }
 
  /* 로그인&회원가입 */

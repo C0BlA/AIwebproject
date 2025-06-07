@@ -409,6 +409,13 @@ async function updateRecentDiaries() {
   });
 }
 
+function togglePlayer() {
+  const player = document.querySelector('.footer-player');
+  const toggleBtn = document.querySelector('.player-toggle-btn');
+  player.classList.toggle('hidden');
+  toggleBtn.textContent = player.classList.contains('hidden') ? '🎵 음악 플레이어' : '▼ 음악 플레이어';
+}
+
 
 
 
