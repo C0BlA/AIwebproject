@@ -87,17 +87,21 @@ app.post('/api/diaries',upload.single('image'), async (req, res) => {
 // 최근 다이어리 5개 불러오기
 app.get('/api/diaries/recent', async (req, res) => {
   const token = req.headers.authorization?.split(' ')[1];
-  console.log("📌 받은 토큰:", token); 
-
   if (!token) return res.status(401).json({ error: '토큰 없음' });
 
   try {
     const decoded = jwt.verify(token, SECRET);
     const userId = decoded.id;
 
-    const diaries = await Diary.find({ userId })
-      .sort({ updatedAt: -1 }) 
-      .limit(7); 
+    // 오늘 기준 -20일 날짜 계산
+    const threeWeeksAgo = new Date();
+    threeWeeksAgo.setDate(threeWeeksAgo.getDate() - 20);
+    const startDate = threeWeeksAgo.toISOString().slice(0, 10);
+
+    const diaries = await Diary.find({
+      userId,
+      date: { $gte: startDate }
+    }).sort({ date: 1 });  // 날짜순 정렬
 
     res.json(diaries);
   } catch (err) {

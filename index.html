@@ -63,30 +63,33 @@
     </div>
 
     <div class="main-content-wrapper">
-      <div class="main-content">
-        <div class="calendar-container">
-          <div class="calendar-header">
-            <button onclick="prevMonth()">←</button>
-            <h3 id="month-year">2025년 5월</h3>
-            <button onclick="nextMonth()">→</button>
-          </div>
-          <table class="calendar" id="calendar"></table>
-        </div>
+          <div class="main-content">
+              <div class="calendar-container">
+                          <div class="calendar-header">
+                            <button onclick="prevMonth()">←</button>
+                            <h3 id="month-year">2025년 5월</h3>
+                            <button onclick="nextMonth()">→</button>
+                          </div>
+                <table class="calendar" id="calendar"></table>
+              </div>
 
-          <div class="diary-container" id="diary-container">
+            <div class="diary-container" id="diary-container">
             
             
-            <p>날짜를 선택해주세요.</p>
+              <p>날짜를 선택해주세요.</p>
 
               <div id="mood-analysis" style="display: none;">
-              <canvas id="quadrantPieChart"></canvas>
-              <canvas id="moodVectorChart"></canvas>
+          <div style="margin-bottom: 10px;">
+            <button onclick="toggleMoodChart()">그래프 전환</button>
+          </div>
+          <canvas id="quadrantPieChart" style="display: block;"></canvas>
+          <canvas id="moodVectorChart" style="display: none;"></canvas>
         </div>
         
-      </div>
-      </div>
-      
+          </div>
     </div>
+      
+  </div>
     
     
   </div>
@@ -257,22 +260,35 @@ document.getElementById('analyzeMoodBtn').addEventListener('click', async () => 
   const emotionCounts = countEmotionLabels(filtered);
   const vectorPoints = generateEmotionHistoryPoints(filtered);
 
-  // 벡터 평균 계산
-  const avg = vectorPoints.reduce((sum, p) => {
-    return { x: sum.x + p.x, y: sum.y + p.y };
-  }, { x: 0, y: 0 });
+    let weightedSum = { x: 0, y: 0 };
+    let totalWeight = 0;
 
-  const vectorSum = {
-    x: vectorPoints.length ? avg.x / vectorPoints.length : 0,
-    y: vectorPoints.length ? avg.y / vectorPoints.length : 0
-  };
+    vectorPoints.forEach((p, i) => {
+      // i = 0이면 3주 전, i = 20이면 오늘
+      let weight = 0;
+      if (i < 7) weight = 0.5;         // 3주 전
+      else if (i < 14) weight = 0.7;   // 2주 전
+      else weight = 1.0;               // 1주 전
 
-  const container = document.getElementById("diary-container");
-  container.innerHTML = `
-    <h2>최근 3주 감정 분석</h2>
-  <canvas id="quadrantPieChart" width="100 height="100" style="margin-bottom:20px;"></canvas>
-  <canvas id="moodVectorChart" width="100" height="100"></canvas>
-  `;
+      weightedSum.x += p.x * weight;
+      weightedSum.y += p.y * weight;
+      totalWeight += weight;
+    });
+
+    const vectorSum = {
+      x: totalWeight > 0 ? weightedSum.x / totalWeight : 0,
+      y: totalWeight > 0 ? weightedSum.y / totalWeight : 0
+    };
+
+    const container = document.getElementById("diary-container");
+    container.innerHTML = `
+      <h2>최근 3주 감정 분석</h2>
+      <div style="margin-bottom: 10px;">
+        <button id="toggleChartBtn" onclick="toggleMoodChart()">다른 분석 보러가기</button>
+      </div>
+      <canvas id="quadrantPieChart" width="250" height="250" style="display: block; width: 100%; height: 100%;"></canvas>
+      <canvas id="moodVectorChart" width="250" height="250" style="display: none; width: 100%; height: 100%;"></canvas>
+    `;
 
   drawEmotionPieChart(emotionCounts);
   drawMoodVector(vectorSum, vectorPoints);
@@ -309,8 +325,25 @@ document.getElementById('analyzeMoodBtn').addEventListener('click', async () => 
 
   
     };
+    function toggleMoodChart() {
+      const pie = document.getElementById("quadrantPieChart");
+      const vector = document.getElementById("moodVectorChart");
+      const button = document.getElementById("toggleChartBtn");
 
-    
+      if (pie.style.display === "none") {
+        pie.style.display = "block";
+        vector.style.display = "none";
+        button.textContent = "감정 벡터 이동 경로 보기";
+      } else {
+        pie.style.display = "none";
+        vector.style.display = "block";
+        button.textContent = "감정별 비율 보기";
+      }
+    }
+        
+
+
+
     
   </script>
 

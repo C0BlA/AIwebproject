@@ -1,5 +1,3 @@
-// 📁 analysis.js
-
 const emotionVectorMap = {
   "🤩": { x: 0.71, y: 0.71 },
   "😊": { x: 0.87, y: 0.5 },
@@ -36,58 +34,123 @@ function analyzeEmotionData(diaries) {
 
   return {
     quadrantCount,
-    vectorSum: { x: count ? totalX / count : 0, y: count ? totalY / count : 0 }
+    vectorSum: { x: totalX, y: totalY }
   };
 }
 
-function drawMoodVector(vectorSum, historyPoints = []) {
+function drawMoodVector(_, historyPoints = []) {
   const ctx = document.getElementById("moodVectorChart").getContext("2d");
+
+  const weekColors = ["#99c2ff", "#aadfaa", "#ffc2c2"];
+  const weights = [0.5, 0.7, 1.0];
+  const scaleFactor = 5;  
+
+  // 주차별 점수 분리
+  const weekData = [[], [], []];
+  const originalWeekData = [[], [], []];  // 가중치 없는 원본도 따로 유지
+
+  for (let i = 0; i < historyPoints.length; i++) {
+    const reverseIndex = historyPoints.length - 1 - i;
+    const weekIndex = 2 - Math.floor(reverseIndex / 7);
+    if (weekIndex >= 0 && weekIndex < 3) {
+      const p = historyPoints[i];
+      const weight = weights[weekIndex];
+
+      
+      weekData[weekIndex].push({
+        ...p,
+        x: p.x * weight * scaleFactor,
+        y: p.y * weight * scaleFactor
+      });
+
+      
+      originalWeekData[weekIndex].push({ ...p });
+    }
+  }
+
+  // 주차별 누적 벡터 합 계산 (가중치 × 확대 없이)
+  const stepPoints = [{ x: 0, y: 0 }];
+  let running = { x: 0, y: 0 };
+  const stepLines = [];
+
+  for (let i = 0; i < originalWeekData.length; i++) {
+    const sum = originalWeekData[i].reduce((acc, p) => ({
+      x: acc.x + p.x,
+      y: acc.y + p.y
+    }), { x: 0, y: 0 });
+
+    const nextPoint = {
+      x: running.x + sum.x,
+      y: running.y + sum.y
+    };
+    stepLines.push({
+      label: `${3 - i}주 전 벡터 합`,
+      data: [running, nextPoint],
+      showLine: true,
+      fill: false,
+      borderColor: weekColors[i],
+      backgroundColor: weekColors[i],
+      pointRadius: 0,
+      tension: 0
+    });
+    stepPoints.push(nextPoint);
+    running = nextPoint;
+  }
 
   new Chart(ctx, {
     type: 'scatter',
     data: {
       datasets: [
-        {
-          label: '감정 이동 경로',
-          data: historyPoints,
-          showLine: true,
-          borderColor: 'blue',
-          backgroundColor: 'blue',
-          tension: 0.3,
+        ...weekData.map((week, i) => ({
+          label: `${3 - i}주 전 (가중 반영)`,
+          data: week,
           pointRadius: 5,
-          pointHoverRadius: 8
-        },
-        {
-          label: '감정 평균 위치',
-          data: [vectorSum],
-          backgroundColor: 'red',
-          pointRadius: 10
-        }
+          backgroundColor: weekColors[i],
+          pointStyle: ['circle', 'rect', 'triangle'][i],
+          showLine: false
+        })),
+       
+        ...stepLines
       ]
     },
     options: {
+      responsive: true,
+      maintainAspectRatio: false,
       scales: {
         x: {
-          min: -1, max: 1,
+          min: -12, max: 12,
           title: { display: true, text: 'Valence (긍정 ↔ 부정)' },
           grid: { color: '#ccc' }
         },
         y: {
-          min: -1, max: 1,
+          min: -12, max: 12,
           title: { display: true, text: 'Arousal (비활성 ↔ 고각성)' },
           grid: { color: '#ccc' }
         }
       },
       plugins: {
-        title: { display: true, text: '감정 벡터 이동 경로' },
-        legend: { position: 'top' }
+        title: {
+          display: true,
+          text: '감정 벡터 이동 경로 (일일 가중 반영, 주차 벡터 합)'
+        },
+        legend: { position: 'top' },
+        tooltip: {
+          callbacks: {
+            label: function (context) {
+              const point = context.raw;
+              if (point.date && point.emotion) {
+                return `📅 ${point.date}  ${point.emotion}  📝 ${point.title || ''}`;
+              }
+              return `x: ${point.x.toFixed(2)}, y: ${point.y.toFixed(2)}`;
+            }
+          }
+        }
       }
     },
     plugins: [{
       id: 'crosshairAxes',
       beforeDraw(chart) {
         const { ctx, chartArea: area, scales } = chart;
-
         const x0 = scales.x.getPixelForValue(0);
         const y0 = scales.y.getPixelForValue(0);
 
@@ -95,13 +158,11 @@ function drawMoodVector(vectorSum, historyPoints = []) {
         ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
         ctx.lineWidth = 1;
 
-        // 수직 축 (y축)
         ctx.beginPath();
         ctx.moveTo(x0, area.top);
         ctx.lineTo(x0, area.bottom);
         ctx.stroke();
 
-        // 수평 축 (x축)
         ctx.beginPath();
         ctx.moveTo(area.left, y0);
         ctx.lineTo(area.right, y0);
@@ -112,6 +173,8 @@ function drawMoodVector(vectorSum, historyPoints = []) {
     }]
   });
 }
+
+
 
 
 function drawEmotionPieChart(counts) {
@@ -149,29 +212,29 @@ function countEmotionLabels(diaries) {
   return count;
 }
 
-
-
 function generateEmotionHistoryPoints(diaries) {
-  const points = [];
-
   const map = {};
-  diaries.forEach(d => { map[d.date] = d.emotion; });
+  diaries.forEach(d => {
+    const date = new Date(d.date).toISOString().slice(0, 10);
+    map[date] = { emotion: d.emotion, title: d.title || '' };
+  });
 
-  const today = new Date();
-  const threeWeeksAgo = new Date();
-  threeWeeksAgo.setDate(today.getDate() - 20); // 총 21일
-
-  for (let i = 0; i < 21; i++) {
-    const date = new Date(threeWeeksAgo);
-    date.setDate(date.getDate() + i);
-    const dateStr = date.toISOString().slice(0, 10);
-    const emotion = map[dateStr];
-    const vec = emotionVectorMap[emotion];
-    if (vec) points.push({ x: vec.x, y: vec.y });
-  }
+ 
+  const points = diaries
+    .sort((a, b) => new Date(a.date) - new Date(b.date))  
+    .map(d => {
+      const dateStr = new Date(d.date).toISOString().slice(0, 10);
+      const info = map[dateStr];
+      const vec = emotionVectorMap[info.emotion];
+      return vec ? {
+        x: vec.x,
+        y: vec.y,
+        date: dateStr,
+        emotion: info.emotion,
+        title: info.title
+      } : null;
+    })
+    .filter(Boolean); 
 
   return points;
 }
-
-
-
