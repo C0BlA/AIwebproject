@@ -6,42 +6,12 @@ function analyzeEmotionTrend(vectorPoints) {
     return null;
   }
 
-  // 가중치 설정 (최근 데이터에 더 높은 가중치)
-  const weights = [0.5, 0.7, 1.0];
-  
-  // 주차별 데이터 분리
-  const weeklyData = [[], [], []];
-  vectorPoints.forEach((point, index) => {
-    const weekIndex = Math.floor(index / 7);
-    if (weekIndex < 3) {
-      weeklyData[weekIndex].push(point);
-    }
-  });
-
-  // 가중 평균 벡터 계산
-  let weightedSum = { x: 0, y: 0 };
-  let totalWeight = 0;
-
-  weeklyData.forEach((week, index) => {
-    const weight = weights[index];
-    const weekSum = week.reduce((acc, point) => ({
-      x: acc.x + point.x,
-      y: acc.y + point.y
-    }), { x: 0, y: 0 });
-
-    weightedSum.x += (weekSum.x / week.length) * weight;
-    weightedSum.y += (weekSum.y / week.length) * weight;
-    totalWeight += weight;
-  });
-
-  const averageVector = {
-    x: weightedSum.x / totalWeight,
-    y: weightedSum.y / totalWeight
-  };
+  // 평균 벡터 계산
+  const averageVector = calculateAverageVector(vectorPoints);
 
   return {
     averageVector,
-    weeklyData
+    weeklyData: vectorPoints
   };
 }
 

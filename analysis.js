@@ -38,6 +38,41 @@ function analyzeEmotionData(diaries) {
   };
 }
 
+// 평균 벡터 계산 함수
+function calculateAverageVector(historyPoints) {
+  const weights = [0.5, 0.7, 1.0];  // 3주 전: 0.5, 2주 전: 0.7, 1주 전: 1.0
+  
+  // 주차별 데이터 분리
+  const weeklyData = [[], [], []];
+  historyPoints.forEach((point, index) => {
+    const weekIndex = Math.floor(index / 7);
+    if (weekIndex < 3) {
+      weeklyData[weekIndex].push(point);
+    }
+  });
+
+  // 가중 평균 벡터 계산
+  let weightedSum = { x: 0, y: 0 };
+  let totalWeight = 0;
+
+  weeklyData.forEach((week, index) => {
+    const weight = weights[index];
+    const weekSum = week.reduce((acc, point) => ({
+      x: acc.x + point.x,
+      y: acc.y + point.y
+    }), { x: 0, y: 0 });
+
+    weightedSum.x += (weekSum.x / week.length) * weight;
+    weightedSum.y += (weekSum.y / week.length) * weight;
+    totalWeight += weight;
+  });
+
+  return {
+    x: weightedSum.x / totalWeight,
+    y: weightedSum.y / totalWeight
+  };
+}
+
 function drawMoodVector(_, historyPoints = []) {
   const ctx = document.getElementById("moodVectorChart").getContext("2d");
 
@@ -66,26 +101,8 @@ function drawMoodVector(_, historyPoints = []) {
     }
   }
 
-  // 가중 평균 벡터 계산
-  let weightedSum = { x: 0, y: 0 };
-  let totalWeight = 0;
-
-  originalWeekData.forEach((week, index) => {
-    const weight = weights[index];
-    const weekSum = week.reduce((acc, point) => ({
-      x: acc.x + point.x,
-      y: acc.y + point.y
-    }), { x: 0, y: 0 });
-
-    weightedSum.x += (weekSum.x / week.length) * weight;
-    weightedSum.y += (weekSum.y / week.length) * weight;
-    totalWeight += weight;
-  });
-
-  const averageVector = {
-    x: weightedSum.x / totalWeight,
-    y: weightedSum.y / totalWeight
-  };
+  // 평균 벡터 계산
+  const averageVector = calculateAverageVector(historyPoints);
 
   // 주차별 누적 벡터 합 계산 (가중치 × 확대 없이)
   const stepPoints = [{ x: 0, y: 0 }];
@@ -192,7 +209,7 @@ function drawMoodVector(_, historyPoints = []) {
                 return `📅 ${point.date}  ${point.emotion}  📝 ${point.title || ''}`;
               }
               if (context.dataset.label === '평균 감정 벡터') {
-                return `평균 벡터: (${(point.x / scaleFactor).toFixed(2)}, ${(point.y / scaleFactor).toFixed(2)})`;
+                return `평균 벡터: (${averageVector.x.toFixed(2)}, ${averageVector.y.toFixed(2)})`;
               }
               return `x: ${(point.x / scaleFactor).toFixed(2)}, y: ${(point.y / scaleFactor).toFixed(2)}`;
             }
@@ -225,6 +242,8 @@ function drawMoodVector(_, historyPoints = []) {
       }
     }]
   });
+
+  return averageVector;  // 평균 벡터 반환
 }
 
 function drawEmotionPieChart(counts) {
