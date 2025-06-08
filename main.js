@@ -208,6 +208,16 @@ async function saveDiary(dateStr) {
 }
 
 async function showDiary(dateStr) {
+  // 미래 날짜 체크
+  const selectedDate = new Date(dateStr);
+  const today = new Date();
+  today.setHours(24, 0, 0, 0); // 시간을 24:00:00으로 설정하여 날짜만 비교
+
+  if (selectedDate > today) {
+    alert('미래의 날짜는 선택할 수 없습니다.');
+    return;
+  }
+
   const container = document.getElementById('diary-container');
   const token = localStorage.getItem('token');
 
