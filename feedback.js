@@ -39,149 +39,90 @@ function analyzeEmotionTrend(vectorPoints) {
     y: weightedSum.y / totalWeight
   };
 
-  // 감정 변화 추이 분석
-  const trend = {
-    direction: calculateTrendDirection(weeklyData),
-    intensity: calculateTrendIntensity(weeklyData),
-    consistency: calculateEmotionConsistency(weeklyData)
-  };
-
   return {
     averageVector,
-    trend,
     weeklyData
   };
 }
 
-// 감정 변화 방향 계산
-function calculateTrendDirection(weeklyData) {
-  const weeklyAverages = weeklyData.map(week => {
-    const sum = week.reduce((acc, point) => ({
-      x: acc.x + point.x,
-      y: acc.y + point.y
-    }), { x: 0, y: 0 });
-    return {
-      x: sum.x / week.length,
-      y: sum.y / week.length
-    };
-  });
-
-  // x축(Valence) 변화 확인
-  const valenceChange = weeklyAverages[2].x - weeklyAverages[0].x;
-  
-  if (Math.abs(valenceChange) < 0.5) return 'stable';
-  return valenceChange > 0 ? 'improving' : 'declining';
-}
-
-// 감정 변화 강도 계산
-function calculateTrendIntensity(weeklyData) {
-  const weeklyAverages = weeklyData.map(week => {
-    const sum = week.reduce((acc, point) => ({
-      x: acc.x + point.x,
-      y: acc.y + point.y
-    }), { x: 0, y: 0 });
-    return {
-      x: sum.x / week.length,
-      y: sum.y / week.length
-    };
-  });
-
-  const maxChange = Math.max(
-    Math.abs(weeklyAverages[2].x - weeklyAverages[0].x),
-    Math.abs(weeklyAverages[2].y - weeklyAverages[0].y)
-  );
-
-  return maxChange;
-}
-
-// 감정 일관성 계산
-function calculateEmotionConsistency(weeklyData) {
-  const weeklyVariances = weeklyData.map(week => {
-    const avg = week.reduce((acc, point) => ({
-      x: acc.x + point.x,
-      y: acc.y + point.y
-    }), { x: 0, y: 0 });
-    
-    avg.x /= week.length;
-    avg.y /= week.length;
-
-    const variance = week.reduce((acc, point) => {
-      return acc + Math.pow(point.x - avg.x, 2) + Math.pow(point.y - avg.y, 2);
-    }, 0) / week.length;
-
-    return variance;
-  });
-
-  return 1 - (weeklyVariances.reduce((a, b) => a + b, 0) / weeklyVariances.length);
-}
+// 피드백 영역 정의
+const feedbackZones = {
+  positiveHigh: {  // 제1사분면: 긍정적 + 고각성
+    x: { min: 0, max: 12 },
+    y: { min: 0, max: 12 },
+    feedback: {
+      message: "매우 활발하고 긍정적인 감정 상태를 보이고 있습니다.",
+      suggestions: [
+        "이러한 긍정적인 에너지를 유지하기 위한 활동을 기록해보세요",
+        "이 시기의 긍정적인 경험들을 더 자주 만들어보세요",
+        "주변 사람들과 긍정적인 에너지를 나누어보세요"
+      ]
+    }
+  },
+  positiveLow: {   // 제4사분면: 긍정적 + 저각성
+    x: { min: 0, max: 12 },
+    y: { min: -12, max: 0 },
+    feedback: {
+      message: "평온하고 안정적인 긍정적 감정 상태입니다.",
+      suggestions: [
+        "이러한 평화로운 상태를 유지하는 데 도움이 되는 활동을 기록해보세요",
+        "마음의 평화를 찾는 방법들을 더 자주 실천해보세요",
+        "명상이나 요가와 같은 활동을 시도해보세요"
+      ]
+    }
+  },
+  negativeHigh: {  // 제2사분면: 부정적 + 고각성
+    x: { min: -12, max: 0 },
+    y: { min: 0, max: 12 },
+    feedback: {
+      message: "스트레스나 불안감이 높은 상태입니다.",
+      suggestions: [
+        "스트레스 해소를 위한 활동을 찾아보세요",
+        "깊은 호흡 운동이나 명상을 시도해보세요",
+        "전문가의 상담을 고려해보세요",
+        "규칙적인 운동을 시작해보세요"
+      ]
+    }
+  },
+  negativeLow: {   // 제3사분면: 부정적 + 저각성
+    x: { min: -12, max: 0 },
+    y: { min: -12, max: 0 },
+    feedback: {
+      message: "우울감이나 무기력감이 있는 상태입니다.",
+      suggestions: [
+        "활동량을 점진적으로 늘려보세요",
+        "일상에서 작은 성취를 만들어보세요",
+        "전문가의 상담을 고려해보세요",
+        "규칙적인 생활 패턴을 만들어보세요"
+      ]
+    }
+  }
+};
 
 // 피드백 생성 함수
 function generateFeedback(analysis) {
   if (!analysis) return null;
 
-  const { averageVector, trend } = analysis;
+  const { averageVector } = analysis;
   
-  // 기본 피드백 카테고리
-  const feedbackCategories = {
-    positive: {
-      highEnergy: [
-        "매우 활발하고 긍정적인 에너지가 느껴집니다!",
-        "이런 에너지를 유지하시면 좋을 것 같아요.",
-        "당신의 긍정적인 에너지가 주변 사람들에게도 좋은 영향을 미칠 거예요."
-      ],
-      lowEnergy: [
-        "평온하고 만족스러운 시간을 보내고 계시네요.",
-        "이런 안정적인 감정 상태가 계속되길 바랍니다.",
-        "마음의 평화를 잘 유지하고 계시네요."
-      ]
-    },
-    negative: {
-      highEnergy: [
-        "스트레스나 불안이 있으신가요?",
-        "이런 감정을 해소할 수 있는 방법을 찾아보는 건 어떨까요?",
-        "지금의 감정을 이해하고 받아들이는 것이 중요해요."
-      ],
-      lowEnergy: [
-        "우울감이나 무기력함이 느껴집니다.",
-        "이런 감정을 나누고 싶으시다면 언제든 이야기해주세요.",
-        "지금은 힘든 시기일 수 있지만, 곧 좋아질 거예요."
-      ]
-    }
-  };
+  // 벡터 위치에 따른 영역 결정
+  const zone = determineZone(averageVector);
+  const feedback = feedbackZones[zone].feedback;
 
-  // 해결 방안
-  const solutions = {
-    stress: [
-      "짧은 산책이나 스트레칭을 해보세요.",
-      "좋아하는 음악을 들어보는 건 어떨까요?",
-      "친구나 가족과 대화를 나누어보세요.",
-      "깊은 호흡 운동을 해보세요.",
-      "취미 활동을 시작해보세요."
-    ],
-    depression: [
-      "규칙적인 운동을 시작해보세요.",
-      "일기 쓰기를 통해 감정을 정리해보세요.",
-      "전문가의 도움을 받아보는 것도 좋은 방법입니다.",
-      "충분한 수면을 취하세요.",
-      "건강한 식습관을 유지하세요."
-    ]
+  return {
+    message: feedback.message,
+    suggestions: feedback.suggestions,
+    vector: averageVector,
+    zone: zone
   };
+}
 
-  // 감정 상태에 따른 피드백 선택
-  const isPositive = averageVector.x > 0;
-  const isHighEnergy = averageVector.y > 0;
-  
-  const category = isPositive ? 'positive' : 'negative';
-  const energy = isHighEnergy ? 'highEnergy' : 'lowEnergy';
-  
-  const feedback = {
-    message: feedbackCategories[category][energy][Math.floor(Math.random() * 3)],
-    solutions: isPositive ? [] : solutions[isHighEnergy ? 'stress' : 'depression'].slice(0, 3),
-    trend: trend,
-    vector: averageVector
-  };
-
-  return feedback;
+// 벡터 위치에 따른 영역 결정 함수
+function determineZone(vector) {
+  if (vector.x >= 0 && vector.y >= 0) return 'positiveHigh';
+  if (vector.x >= 0 && vector.y < 0) return 'positiveLow';
+  if (vector.x < 0 && vector.y >= 0) return 'negativeHigh';
+  return 'negativeLow';
 }
 
 // 피드백 표시 함수
@@ -193,18 +134,15 @@ function displayFeedback(feedback) {
   modal.innerHTML = `
     <div class="feedback-content">
       <h3>3주 감정 분석 결과</h3>
+      <div class="vector-position">
+        <p>감정 벡터 위치: (${feedback.vector.x.toFixed(2)}, ${feedback.vector.y.toFixed(2)})</p>
+      </div>
       <p class="feedback-message">${feedback.message}</p>
-      ${feedback.solutions.length > 0 ? `
-        <div class="feedback-solutions">
-          <h4>추천 해결 방안</h4>
-          <ul>
-            ${feedback.solutions.map(solution => `<li>${solution}</li>`).join('')}
-          </ul>
-        </div>
-      ` : ''}
-      <div class="feedback-trend">
-        <p>감정 변화 추이: ${feedback.trend.direction === 'improving' ? '개선 중' : 
-                          feedback.trend.direction === 'declining' ? '하락 중' : '안정적'}</p>
+      <div class="feedback-solutions">
+        <h4>제안사항</h4>
+        <ul>
+          ${feedback.suggestions.map(suggestion => `<li>${suggestion}</li>`).join('')}
+        </ul>
       </div>
       <button onclick="this.parentElement.parentElement.remove()">닫기</button>
     </div>

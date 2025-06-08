@@ -56,17 +56,36 @@ function drawMoodVector(_, historyPoints = []) {
       const p = historyPoints[i];
       const weight = weights[weekIndex];
 
-      
       weekData[weekIndex].push({
         ...p,
         x: p.x * weight * scaleFactor,
         y: p.y * weight * scaleFactor
       });
 
-      
       originalWeekData[weekIndex].push({ ...p });
     }
   }
+
+  // 가중 평균 벡터 계산
+  let weightedSum = { x: 0, y: 0 };
+  let totalWeight = 0;
+
+  originalWeekData.forEach((week, index) => {
+    const weight = weights[index];
+    const weekSum = week.reduce((acc, point) => ({
+      x: acc.x + point.x,
+      y: acc.y + point.y
+    }), { x: 0, y: 0 });
+
+    weightedSum.x += (weekSum.x / week.length) * weight;
+    weightedSum.y += (weekSum.y / week.length) * weight;
+    totalWeight += weight;
+  });
+
+  const averageVector = {
+    x: weightedSum.x / totalWeight,
+    y: weightedSum.y / totalWeight
+  };
 
   // 주차별 누적 벡터 합 계산 (가중치 × 확대 없이)
   const stepPoints = [{ x: 0, y: 0 }];
@@ -97,6 +116,36 @@ function drawMoodVector(_, historyPoints = []) {
     running = nextPoint;
   }
 
+  // 평균 벡터 표시를 위한 데이터셋 추가
+  const averageVectorDataset = {
+    label: '평균 감정 벡터',
+    data: [{
+      x: averageVector.x * scaleFactor,
+      y: averageVector.y * scaleFactor
+    }],
+    pointRadius: 8,
+    pointBackgroundColor: '#ff0000',
+    pointBorderColor: 'rgb(255, 0, 0)',
+    pointBorderWidth: 2,
+    pointStyle: 'circle',
+    showLine: false
+  };
+
+  // 평균 벡터를 중심으로 하는 원 표시
+  const circleDataset = {
+    label: '평균 벡터 영역',
+    data: [{
+      x: averageVector.x * scaleFactor,
+      y: averageVector.y * scaleFactor
+    }],
+    pointRadius: 15,
+    pointBackgroundColor: 'rgba(255, 0, 0, 0.1)',
+    pointBorderColor: 'rgba(255, 0, 0, 0.3)',
+    pointBorderWidth: 1,
+    pointStyle: 'circle',
+    showLine: false
+  };
+
   new Chart(ctx, {
     type: 'scatter',
     data: {
@@ -109,8 +158,9 @@ function drawMoodVector(_, historyPoints = []) {
           pointStyle: ['circle', 'rect', 'triangle'][i],
           showLine: false
         })),
-       
-        ...stepLines
+        ...stepLines,
+        circleDataset,
+        averageVectorDataset
       ]
     },
     options: {
@@ -141,7 +191,10 @@ function drawMoodVector(_, historyPoints = []) {
               if (point.date && point.emotion) {
                 return `📅 ${point.date}  ${point.emotion}  📝 ${point.title || ''}`;
               }
-              return `x: ${point.x.toFixed(2)}, y: ${point.y.toFixed(2)}`;
+              if (context.dataset.label === '평균 감정 벡터') {
+                return `평균 벡터: (${(point.x / scaleFactor).toFixed(2)}, ${(point.y / scaleFactor).toFixed(2)})`;
+              }
+              return `x: ${(point.x / scaleFactor).toFixed(2)}, y: ${(point.y / scaleFactor).toFixed(2)}`;
             }
           }
         }
@@ -173,9 +226,6 @@ function drawMoodVector(_, historyPoints = []) {
     }]
   });
 }
-
-
-
 
 function drawEmotionPieChart(counts) {
   const ctx = document.getElementById("quadrantPieChart").getContext("2d");
