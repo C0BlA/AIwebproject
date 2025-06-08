@@ -416,6 +416,45 @@ function togglePlayer() {
   toggleBtn.textContent = player.classList.contains('hidden') ? '🎵 음악 플레이어' : '▼ 음악 플레이어';
 }
 
+document.getElementById('analyzeMoodBtn').addEventListener('click', async () => {
+  const token = localStorage.getItem("token");
+  const res = await fetch("http://localhost:3000/api/diaries/recent", {
+    headers: { Authorization: "Bearer " + token }
+  });
+  const diaries = await res.json();
+
+  const today = new Date();
+  const threeWeeksAgo = new Date();
+  threeWeeksAgo.setDate(today.getDate() - 20);
+  const filtered = diaries
+    .filter(d => new Date(d.date) >= threeWeeksAgo)
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  const emotionCounts = countEmotionLabels(filtered);
+  const vectorPoints = generateEmotionHistoryPoints(filtered);
+
+  // 기존 차트 표시
+  const container = document.getElementById("diary-container");
+  const startDate = new Date(filtered[0].date).toLocaleDateString();
+  const endDate = new Date(filtered[filtered.length - 1].date).toLocaleDateString();
+  
+  container.innerHTML = `
+    <h2>최근 3주 감정 분석</h2>
+    <p style="color: #666; margin-bottom: 15px;">분석 기간: ${startDate} ~ ${endDate}</p>
+    <div style="margin-bottom: 10px;">
+      <button id="toggleChartBtn" onclick="toggleMoodChart()">다른 분석 보러가기</button>
+    </div>
+    <canvas id="quadrantPieChart" width="250" height="250" style="display: block; width: 100%; height: 100%;"></canvas>
+    <canvas id="moodVectorChart" width="250" height="250" style="display: none; width: 100%; height: 100%;"></canvas>
+  `;
+
+  drawEmotionPieChart(emotionCounts);
+  drawMoodVector(null, vectorPoints);
+
+  // 피드백 시스템 실행
+  runEmotionAnalysis();
+});
+
 
 
 
