@@ -468,3 +468,45 @@ body, html {
 .feedback-content button:hover {
   background: #1a4b7c;
 }
+
+#analyzeMoodBtn {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 20px;
+}
+
+.calendar-header button {
+  padding: 6px 12px;
+  border-radius: 6px;
+  background-color: #e0f0ff;
+  border: 1px solid #5a9bd4;
+  color: #2a5d9f;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.calendar-header button:hover {
+  background-color: #d4ecff;
+}
+
+#toggleChartBtn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background-color: #2d6ca7;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+button:hover {
+  background-color: #1a4b7c;
+}

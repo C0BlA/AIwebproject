@@ -173,7 +173,7 @@ function drawMoodVector(_, historyPoints = []) {
           pointRadius: 5,
           backgroundColor: weekColors[i],
           pointStyle: ['circle', 'rect', 'triangle'][i],
-          showLine: false
+          showLine: false,
         })),
         ...stepLines,
         circleDataset,
@@ -200,7 +200,15 @@ function drawMoodVector(_, historyPoints = []) {
           display: true,
           text: '감정 벡터 이동 경로 (일일 가중 반영, 주차 벡터 합)'
         },
-        legend: { position: 'top' },
+        legend: {
+          position: 'top',
+          labels: {
+            // '벡터 합'이 들어간 레이블은 건너뛰고, 3·2·1주전 레이블만 표시
+            filter: function(legendItem) {
+              return !legendItem.text.includes('벡터 합');
+            }
+          }
+        },
         tooltip: {
           callbacks: {
             label: function (context) {
